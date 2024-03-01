@@ -1,7 +1,9 @@
 #!/bin/bash
 
-git pull
-
+# ensure latest upstream version
+git pull || {
+    echo "failed running git pull."
+}
 
 # Check if a container with the same name exists and stop and remove it
 if docker ps -a --format '{{.Names}}' | grep -q "^prod-auto"; then
