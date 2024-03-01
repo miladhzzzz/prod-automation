@@ -84,7 +84,7 @@ async def github_webhook(request: Request, background_tasks: BackgroundTasks):
         try:
             # Check if project already exists locally
             if os.path.exists(project_dir):
-                subprocess.run(["git", "fetch"], cwd=project_dir, check=True)
+                subprocess.run(["git", "pull"], cwd=project_dir, check=True)
             else:
                 # Clone the repository if it doesn't exist
                 subprocess.run(["git", "clone", repo_url, project_dir], check=True)
@@ -184,7 +184,7 @@ async def deploy_project(owner: str, repo: str, background_tasks: BackgroundTask
     try:
         # Check if project already exists locally
         if os.path.exists(project_dir):
-            subprocess.run(["git", "fetch"], cwd=project_dir, check=True)
+            subprocess.run(["git", "pull"], cwd=project_dir, check=True)
         else:
             # Clone the repository if it doesn't exist
             subprocess.run(["git", "clone", repo_url, project_dir], check=True)
