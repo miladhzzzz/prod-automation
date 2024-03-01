@@ -1,0 +1,5 @@
+sqlite3
+pydantic
+fastapi
+uvicorn
+sentry_sdk
