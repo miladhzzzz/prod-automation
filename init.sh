@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Check if Docker, Docker Compose, and Git are installed
-if ! command -v docker &> /dev/null || ! command -v docker-compose &> /dev/null || ! command -v git &> /dev/null; then
+if ! command -v docker &> /dev/null || ! command -v git &> /dev/null; then
     echo "Required dependencies are not installed. Running setup-host.sh..."
     # Execute the setup-host.sh script
     bash ./scripts/setup-host.sh
