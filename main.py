@@ -251,4 +251,4 @@ def update_project_counts(project_name: str, success: bool):
 
 
 if __name__ == "__main__":
-    uvicorn.run("test:app", host="0.0.0.0", port=5001)
+    uvicorn.run("main:app", host="0.0.0.0", port=1111)
