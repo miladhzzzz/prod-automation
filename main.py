@@ -160,7 +160,17 @@ async def get_jobs() -> List[Dict[str, str]]:
     cur.execute('''SELECT j.id, j.status, j.log_file, p.name as project_name, p.success_count, p.failure_count 
                    FROM jobs j
                    JOIN projects p ON j.project_id = p.id''')
-    jobs = [{"id": row[0], "status": row[1], "log_file": row[2], "project_name": row[3], "success_count": row[4], "failure_count": row[5]} for row in cur.fetchall()]
+    jobs = []
+    for row in cur.fetchall():
+        job = {
+            "id": row[0],
+            "status": row[1],
+            "log_file": row[2],
+            "project_name": row[3],
+            "success_count": str(row[4]),  # Convert to string
+            "failure_count": str(row[5])   # Convert to string
+        }
+        jobs.append(job)
     return jobs
 
 @app.get("/deploy/{owner}/{repo}")
