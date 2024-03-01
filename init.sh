@@ -7,7 +7,7 @@ git pull
 if docker ps -a --format '{{.Names}}' | grep -q "^prod-auto"; then
    echo "Found the old Container...Removing!"
    docker stop prod-auto
-   docker rm prot-auto
+   docker rm prod-auto
 fi
 
 # build docker container
