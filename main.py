@@ -7,14 +7,8 @@ from typing import Optional, List, Dict
 
 sentry_sdk.init(
     dsn="https://4f856c3765722c946a61baf82463fd8a@o4503956234764288.ingest.sentry.io/4506832041017344",
-    # Set traces_sample_rate to 1.0 to capture 100%
-    # of transactions for performance monitoring.
     traces_sample_rate=1.0,
-    # Set profiles_sample_rate to 1.0 to profile 100%
-    # of sampled transactions.
-    # We recommend adjusting this value in production.
     profiles_sample_rate=1.0,
-
     enable_tracing=True
 )
 
@@ -46,6 +40,22 @@ conn.commit()
 class Payload(BaseModel):
     repository: Optional[dict]
 
+# Logic / Global / Background functions
+def read_exposed_ports_from_dockerfile(dockerfile_path: str) -> List[int]:
+    exposed_ports = []
+    with open(dockerfile_path, "r") as dockerfile:
+        for line in dockerfile:
+            line = line.strip()
+            if line.startswith("EXPOSE"):
+                ports_str = line.split()[1]
+                ports = ports_str.split()
+                for port in ports:
+                    try:
+                        exposed_ports.append(int(port))
+                    except ValueError:
+                        print(f"Invalid port number: {port}")
+    return exposed_ports
+
 def verify_signature(payload: bytes, signature: str):
     if GITHUB_WEBHOOK_SECRET:
         secret = bytes(GITHUB_WEBHOOK_SECRET, "utf-8")
@@ -53,62 +63,6 @@ def verify_signature(payload: bytes, signature: str):
         expected_signature = f"sha1={hashed_payload}"
         if not hmac.compare_digest(expected_signature, signature):
             raise HTTPException(status_code=401, detail="Invalid signature")
-
-@app.post("/webhook")
-async def github_webhook(request: Request, background_tasks: BackgroundTasks):
-    event = request.headers.get("X-GitHub-Event")
-    signature = request.headers.get("X-Hub-Signature")
-
-    if not event or not signature:
-        raise HTTPException(status_code=400, detail="Missing GitHub headers")
-
-    try:
-        payload = await request.json()
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid JSON payload")
-
-    if event == "push":
-        # Verify the signature using the secret
-        verify_signature(request.body(), signature)
-
-        owner = payload["repository"]["owner"]["name"]
-        repo = payload["repository"]["name"]
-        project_name = repo
-        log_file = f"{project_name}.log"
-        repo_url = f"https://github.com/{owner}/{repo}.git"
-        project_dir = os.path.abspath(os.path.join("projects", project_name))
-        log_dir = os.path.abspath(os.path.join(LOGS_DIR, project_name))
-        log_file_path = os.path.join(log_dir, log_file)
-        job_id = uuid.uuid4().hex
-
-        try:
-            # Check if project already exists locally
-            if os.path.exists(project_dir):
-                subprocess.run(["git", "pull"], cwd=project_dir, check=True)
-            else:
-                # Clone the repository if it doesn't exist
-                subprocess.run(["git", "clone", repo_url, project_dir], check=True)
-            
-            # Create the log directory if it doesn't exist
-            os.makedirs(log_dir, exist_ok=True)
-            
-            # Execute deployment in background task
-            background_tasks.add_task(deploy_project_background, project_name, project_dir, log_file_path, job_id)
-            
-            # Log the job
-            log_build_request(project_name, "started")
-            
-            # Provide immediate response to the user
-            return {"message": f"Deployment started for {project_name}. Check status at /status/{job_id}"}
-        
-        except subprocess.CalledProcessError as e:
-            print(f"Error deploying {project_name}: {e}")
-            log_build_request(project_name, "failure")
-            return {"message": f"Failed to deploy {project_name}"}
-    
-    return {"message": f"Ignored event: {event}"}
-
-
 
 def log_build_request(project_name: str, status: str):
     conn = sqlite3.connect(DB_FILE)  # Establish connection
@@ -140,7 +94,69 @@ def get_build_status(project_name: str) -> Dict[str, str]:
     else:
         return {"status": "not_started", "output": f"No build record found for {project_name}."}
 
+def deploy_with_docker_compose(project_name: str, compose_file_path: str, log_file_path: str):
+    try:
+        # Check if there are existing containers for the project
+        existing_containers = subprocess.run(["docker-compose", "-f", compose_file_path, "ps", "-q"], capture_output=True, text=True)
+        if existing_containers.stdout:
+            # Stop and remove existing containers for the project
+            subprocess.run(["docker-compose", "-f", compose_file_path, "down"], check=True)
 
+        # Build and start the services defined in the docker-compose file
+        with open(log_file_path, "a") as log:
+            subprocess.run(["docker-compose", "-f", compose_file_path, "up", "-d"], stdout=log, stderr=subprocess.STDOUT, check=True)
+
+        log_build_request(project_name, "success")
+        update_project_counts(project_name, True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error deploying {project_name} with Docker Compose: {e}")
+        log_build_request(project_name, "failure")
+        update_project_counts(project_name, False)
+
+def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTasks):
+    project_name = repo
+    log_file = f"{project_name}.log"
+    repo_url = f"https://github.com/{owner}/{repo}.git"
+    project_dir = os.path.abspath(os.path.join("projects", project_name))
+    log_dir = os.path.abspath(os.path.join(LOGS_DIR, project_name))
+    log_file_path = os.path.join(log_dir, log_file)
+
+    try:
+        # Check if project already exists locally
+        if os.path.exists(project_dir):
+            subprocess.run(["git", "pull"], cwd=project_dir, check=True)
+        else:
+            # Clone the repository if it doesn't exist
+            subprocess.run(["git", "clone", repo_url, project_dir], check=True)
+        
+        # Create the log directory if it doesn't exist
+        os.makedirs(log_dir, exist_ok=True)
+
+        # Check if Docker Compose file exists
+        compose_file_path = os.path.join(project_dir, "docker-compose.yml")
+        if compose_file_path and os.path.exists(compose_file_path):
+            # Use docker-compose to deploy the project
+            background_tasks.add_task(deploy_with_docker_compose, project_name, compose_file_path, log_file_path)
+        else:
+            # Read exposed ports from Dockerfile
+            dockerfile_path = os.path.join(project_dir, "Dockerfile")
+            exposed_ports = read_exposed_ports_from_dockerfile(dockerfile_path)
+
+            # Execute deployment using Dockerfile
+            background_tasks.add_task(deploy_project_background, project_name, project_dir, log_file_path, exposed_ports)
+
+        # Log the job
+        log_build_request(project_name, "started")
+        
+        # Provide immediate response to the user
+        return {"message": f"Deployment started for {project_name}. Check status at /status/{project_name}"}
+    
+    except subprocess.CalledProcessError as e:
+        print(f"Error deploying {project_name}: {e}")
+        log_build_request(project_name, "failure")
+        return {"message": f"Failed to deploy {project_name}"}
+
+# HTTP REST API ENDPOINTS
 @app.get("/status/{project_name:path}")
 async def show_build_status(project_name: str):
     # Return the status and output of the build process for a specific project
@@ -173,42 +189,73 @@ async def get_jobs() -> List[Dict[str, str]]:
         jobs.append(job)
     return jobs
 
-@app.get("/deploy/{owner}/{repo}")
-async def deploy_project(owner: str, repo: str, background_tasks: BackgroundTasks):
-    project_name = repo
-    log_file = f"{project_name}.log"
-    repo_url = f"https://github.com/{owner}/{repo}.git"
-    project_dir = os.path.abspath(os.path.join("projects", project_name))
-    log_dir = os.path.abspath(os.path.join(LOGS_DIR, project_name))
+@app.post("/webhook")
+async def github_webhook(request: Request, background_tasks: BackgroundTasks):
+    event = request.headers.get("X-GitHub-Event")
+    signature = request.headers.get("X-Hub-Signature")
+
+    if not event or not signature:
+        raise HTTPException(status_code=400, detail="Missing GitHub headers")
 
     try:
-        # Check if project already exists locally
-        if os.path.exists(project_dir):
-            subprocess.run(["git", "pull"], cwd=project_dir, check=True)
-        else:
-            # Clone the repository if it doesn't exist
-            subprocess.run(["git", "clone", repo_url, project_dir], check=True)
-        
-        # Create the log directory if it doesn't exist
-        os.makedirs(log_dir, exist_ok=True)
-        
-        # Construct the log file path
-        log_file_path = os.path.join(log_dir, log_file)
-        
-        # Execute deployment in background task
-        background_tasks.add_task(deploy_project_background, project_name, project_dir, log_file_path)
-        
-        # Log the job
-        log_build_request(project_name, "started")
-        
-        # Provide immediate response to the user
-        return {"message": f"Deployment started for {project_name}. Check status at /status/{project_name}"}
-    
-    except subprocess.CalledProcessError as e:
-        print(f"Error deploying {project_name}: {e}")
-        log_build_request(project_name, "failure")
-        return {"message": f"Failed to deploy {project_name}"}
+        payload = await request.json()
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
 
+    if event == "push":
+        # Verify the signature using the secret
+        verify_signature(request.body(), signature)
+
+        owner = payload["repository"]["owner"]["name"]
+        repo = payload["repository"]["name"]
+        
+        return deploy_project_logic(owner, repo, background_tasks)
+    
+    return {"message": f"Ignored event: {event}"}
+
+@app.get("/deploy/{owner}/{repo}")
+async def deploy_project(owner: str, repo: str, background_tasks: BackgroundTasks):
+    return deploy_project_logic(owner, repo, background_tasks)
+
+@app.get("/revert/{owner}/{repo}/{revert_type}")
+async def revert_changes(
+    owner: str ,
+    repo: str ,
+    revert_type: str ,
+    background_tasks: BackgroundTasks
+):
+    if revert_type not in ["soft", "hard"]:
+        return {"message": "Invalid revert type. Use 'soft' or 'hard'."}, 400
+    
+    # Logic to determine which type of revert to perform
+    if revert_type == "soft":
+        # Perform soft revert
+        subprocess.run(["git", "revert", "--soft", "HEAD~1"], cwd=f"projects/{owner}/{repo}", check=True)
+    else:
+        # Perform hard revert
+        subprocess.run(["git", "revert", "--hard", "HEAD~1"], cwd=f"projects/{owner}/{repo}", check=True)
+
+    # Call deploy_project_logic to rebuild the project
+    background_tasks.add_task(
+        deploy_project_logic,
+        owner,
+        repo
+    )
+    
+    # Return response indicating success or failure
+    return {"message": f"Reverted changes for project {repo} with {revert_type} revert. Rebuilding..."}
+
+@app.get("/stop/{project_name}")
+async def stop_and_remove_containers(project_name: str):
+    # Stop and remove containers associated with the project name
+    try:
+        # Run the function to stop and remove containers
+        stop_and_remove_container(project_name)
+        return {"message": f"Containers for project {project_name} stopped and removed successfully."}
+    except Exception as e:
+        return {"message": f"Failed to stop and remove containers for project {project_name}. Error: {str(e)}"}, 500
+
+# Helper functions
 def stop_and_remove_container(container_name: str):
     try:
         subprocess.run(["docker", "inspect", container_name], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -218,12 +265,26 @@ def stop_and_remove_container(container_name: str):
     subprocess.run(["docker", "stop", container_name], check=True)
     subprocess.run(["docker", "rm", container_name], check=True)
 
-def deploy_project_background(project_name: str, project_dir: str, log_file_path: str):
+def deploy_project_background(project_name: str, project_dir: str, log_file_path: str, exposed_ports: List[int]):
     try:
         stop_and_remove_container(project_name)
         with open(log_file_path, "a") as log:
             subprocess.run(["docker", "build", "-t", project_name.lower(), project_dir], stdout=log, stderr=subprocess.STDOUT, check=True)
-        subprocess.run(["docker", "run", "-d", "--name", project_name, project_name.lower()])
+        
+        # Construct the command to run the container
+        run_command = ["docker", "run", "-d", "--name", project_name]
+        
+        # Add exposed ports to the run command
+        if exposed_ports:
+            for port in exposed_ports:
+                run_command.extend(["-p", f"{port}:{port}"])
+        
+        # Add the image name
+        run_command.append(project_name.lower())
+        
+        # Run the container
+        subprocess.run(run_command)
+        
         log_build_request(project_name, "success")
         update_project_counts(project_name, True)
     except subprocess.CalledProcessError as e:
@@ -246,7 +307,6 @@ def get_or_create_project_id(project_name: str) -> int:
     finally:
         conn.close()  # Close the connection
 
-
 def update_project_counts(project_name: str, success: bool):
     conn = sqlite3.connect(DB_FILE)  # Establish connection
     cur = conn.cursor()
@@ -258,7 +318,6 @@ def update_project_counts(project_name: str, success: bool):
         conn.commit()
     finally:
         conn.close()  # Close the connection
-
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=1111)
