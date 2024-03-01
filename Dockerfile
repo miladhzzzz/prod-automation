@@ -12,11 +12,10 @@ RUN apt-get update && apt-get install -y \
 RUN apt-get update && apt-get install -y docker.io
 RUN apt-get install -y python3 python3-pip git
 
-# Set up working directory and copy your application code
 WORKDIR /app
 COPY . .
 
-# Your CMD or ENTRYPOINT command goes here
+EXPOSE 1111
 
 RUN pip3 install -r requirements.txt
 
