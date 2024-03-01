@@ -17,6 +17,6 @@ COPY . .
 
 # Your CMD or ENTRYPOINT command goes here
 
-RUN pip3 install requirements.txt
+RUN pip install requirements.txt
 
 CMD ["python3", "main.py"]
