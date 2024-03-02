@@ -1,0 +1,26 @@
+version: '3.9'
+
+services:
+
+  reverse-proxy:
+    # The official v2 Traefik docker image
+    image: traefik:v2.11
+    # Enables the web UI and tells Traefik to listen to docker
+    command: --api.insecure=true --providers.docker
+    ports:
+      # The HTTP port
+      - "80:80"
+      # The Web UI (enabled by --api.insecure=true)
+      - "8080:8080"
+    volumes:
+      # So that Traefik can listen to the Docker events
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  prod-auto:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "1111:1111"  # Adjust port if necessary
+    labels:
+      - "traefik.http.routers.prod-auto.rule=PathPrefix(`/prod`)"
