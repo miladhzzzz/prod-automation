@@ -45,9 +45,6 @@ def first_time_database_init():
             conn.commit()
     except sqlite3.Error as e:
         print(f"Error logging build request: {e}")
-
-    finally:
-        conn.close()
     
 def read_exposed_ports_from_dockerfile(dockerfile_path: str) -> List[int]:
     exposed_ports = []
@@ -81,7 +78,6 @@ def log_build_request(project_name: str, status: str):
             conn.commit()
     except sqlite3.Error as e:
         print(f"Error logging build request: {e}")
-
     finally:
         conn.close()
 
@@ -108,8 +104,6 @@ def get_build_status(project_name: str) -> Dict[str, str]:
                 return {"status": "not_started", "output": f"No build record found for {project_name}."}
     except sqlite3.Error as e:
         print(f"Error retrieving build status: {e}")
-    finally:
-        conn.close()
 
 def deploy_with_docker_compose(project_name: str, compose_file_path: str, log_file_path: str):
     try:
@@ -192,12 +186,9 @@ async def get_projects() -> List[str]:
         
     except sqlite3.Error as e:
         print(f"Error logging build request: {e}")
-    finally:
-        conn.close()
 
 @app.get("/jobs")
 async def get_jobs() -> List[Dict[str, str]]:
-
     try:
         with connection_pool.get_connection() as conn:
             cur = conn.cursor()
@@ -220,10 +211,6 @@ async def get_jobs() -> List[Dict[str, str]]:
         
     except sqlite3.Error as e:
         print(f"Error logging build request: {e}")
-
-    finally:
-        conn.close()
-    
 
 @app.post("/webhook")
 async def github_webhook(request: Request, background_tasks: BackgroundTasks):
@@ -343,8 +330,6 @@ def get_or_create_project_id(project_name: str) -> int:
             
     except sqlite3.Error as e:
         print(f"Error logging build request: {e}")
-    finally:
-        conn.close()
 
 def update_project_counts(project_name: str, success: bool):
     try:
@@ -358,10 +343,8 @@ def update_project_counts(project_name: str, success: bool):
 
     except sqlite3.Error as e:
         print(f"Error logging build request: {e}")
-    finally:
-        conn.close()
 
 if __name__ == "__main__":
-    
+
     first_time_database_init()
     uvicorn.run("main:app", host="0.0.0.0", port=1111)
