@@ -3,7 +3,7 @@ from hashlib import sha1
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Request
 from pydantic import BaseModel
 from typing import Optional, List, Dict
-
+from db import ConnectionPool
 
 sentry_sdk.init(
     dsn="https://4f856c3765722c946a61baf82463fd8a@o4503956234764288.ingest.sentry.io/4506832041017344",
@@ -12,7 +12,11 @@ sentry_sdk.init(
     enable_tracing=True
 )
 
+# initialize FastAPI
 app = FastAPI()
+
+# Initialize connection pool
+connection_pool = ConnectionPool()
 
 # Define a secret token to verify webhook requests from GitHub
 GITHUB_WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET")
@@ -23,24 +27,25 @@ if not os.path.exists(LOGS_DIR):
     os.makedirs(LOGS_DIR)
 logging.basicConfig(filename=os.path.join(LOGS_DIR, "builds.log"), level=logging.INFO, format="%(asctime)s - %(message)s")
 
-# Create or connect to SQLite database
-DB_FILE = "builds.db"
-conn = sqlite3.connect(DB_FILE)
-cur = conn.cursor()
-
-# Initialize database tables if they don't exist
-cur.execute('''CREATE TABLE IF NOT EXISTS projects 
-               (id INTEGER PRIMARY KEY, name TEXT UNIQUE, success_count INTEGER DEFAULT 0, failure_count INTEGER DEFAULT 0)''')
-
-cur.execute('''CREATE TABLE IF NOT EXISTS jobs 
-               (id TEXT PRIMARY KEY, project_id INTEGER, status TEXT, log_file TEXT,
-               FOREIGN KEY(project_id) REFERENCES projects(id))''')
-conn.commit()
-
 class Payload(BaseModel):
     repository: Optional[dict]
 
 # Logic / Global / Background functions
+def first_time_database_init():
+    try:
+        with connection_pool.get_connection() as conn:
+            cur = conn.cursor()
+                # Initialize database tables if they don't exist
+            cur.execute('''CREATE TABLE IF NOT EXISTS projects 
+                            (id INTEGER PRIMARY KEY, name TEXT UNIQUE, success_count INTEGER DEFAULT 0, failure_count INTEGER DEFAULT 0)''')
+
+            cur.execute('''CREATE TABLE IF NOT EXISTS jobs 
+                            (id TEXT PRIMARY KEY, project_id INTEGER, status TEXT, log_file TEXT,
+                            FOREIGN KEY(project_id) REFERENCES projects(id))''')
+            conn.commit()
+    except sqlite3.Error as e:
+        print(f"Error logging build request: {e}")
+    
 def read_exposed_ports_from_dockerfile(dockerfile_path: str) -> List[int]:
     exposed_ports = []
     with open(dockerfile_path, "r") as dockerfile:
@@ -65,34 +70,38 @@ def verify_signature(payload: bytes, signature: str):
             raise HTTPException(status_code=401, detail="Invalid signature")
 
 def log_build_request(project_name: str, status: str):
-    conn = sqlite3.connect(DB_FILE)  # Establish connection
-    cur = conn.cursor()
     try:
-        cur.execute("INSERT INTO jobs (id, project_id, status, log_file) VALUES (?, ?, ?, ?)", 
-                    (uuid.uuid4().hex, get_or_create_project_id(project_name), status, f"{project_name}.log"))
-        conn.commit()
-    finally:
-        conn.close()  # Close the connection
+        with connection_pool.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("INSERT INTO jobs (id, project_id, status, log_file) VALUES (?, ?, ?, ?)", 
+                        (uuid.uuid4().hex, get_or_create_project_id(project_name), status, f"{project_name}.log"))
+            conn.commit()
+    except sqlite3.Error as e:
+        print(f"Error logging build request: {e}")
 
 def get_build_status(project_name: str) -> Dict[str, str]:
-    # Check the status of the build process for a specific project
-    cur.execute('''SELECT j.status, j.log_file 
-                   FROM jobs j
-                   JOIN projects p ON j.project_id = p.id
-                   WHERE p.name=?''', (project_name,))
-    row = cur.fetchone()
-    if row:
-        status = row[0]
-        log_file = row[1]
-        log_file_path = os.path.join(LOGS_DIR, project_name, log_file)
-        if os.path.exists(log_file_path):
-            with open(log_file_path, "r") as log:
-                log_content = log.read()
-            return {"status": status, "output": log_content}
-        else:
-            return {"status": "not_started", "output": f"Build log for {project_name} not available."}
-    else:
-        return {"status": "not_started", "output": f"No build record found for {project_name}."}
+    try:
+        with connection_pool.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute('''SELECT j.status, j.log_file 
+                           FROM jobs j
+                           JOIN projects p ON j.project_id = p.id
+                           WHERE p.name=?''', (project_name,))
+            row = cur.fetchone()
+            if row:
+                status = row[0]
+                log_file = row[1]
+                log_file_path = os.path.join(LOGS_DIR, project_name, log_file)
+                if os.path.exists(log_file_path):
+                    with open(log_file_path, "r") as log:
+                        log_content = log.read()
+                    return {"status": status, "output": log_content}
+                else:
+                    return {"status": "not_started", "output": f"Build log for {project_name} not available."}
+            else:
+                return {"status": "not_started", "output": f"No build record found for {project_name}."}
+    except sqlite3.Error as e:
+        print(f"Error retrieving build status: {e}")
 
 def deploy_with_docker_compose(project_name: str, compose_file_path: str, log_file_path: str):
     try:
@@ -165,29 +174,43 @@ async def show_build_status(project_name: str):
 
 @app.get("/projects")
 async def get_projects() -> List[str]:
-    # Return the names of all projects for which build logs are available
-    cur.execute("SELECT DISTINCT name FROM projects")
-    projects = [row[0] for row in cur.fetchall()]
-    return projects
+    try:
+        with connection_pool.get_connection() as conn:
+            cur = conn.cursor()
+            # Return the names of all projects for which build logs are available
+            cur.execute("SELECT DISTINCT name FROM projects")
+            projects = [row[0] for row in cur.fetchall()]
+            return projects
+        
+    except sqlite3.Error as e:
+        print(f"Error logging build request: {e}")
 
 @app.get("/jobs")
 async def get_jobs() -> List[Dict[str, str]]:
-    # Return the details of all jobs including project details
-    cur.execute('''SELECT j.id, j.status, j.log_file, p.name as project_name, p.success_count, p.failure_count 
-                   FROM jobs j
-                   JOIN projects p ON j.project_id = p.id''')
-    jobs = []
-    for row in cur.fetchall():
-        job = {
-            "id": row[0],
-            "status": row[1],
-            "log_file": row[2],
-            "project_name": row[3],
-            "success_count": str(row[4]),  # Convert to string
-            "failure_count": str(row[5])   # Convert to string
-        }
-        jobs.append(job)
-    return jobs
+
+    try:
+        with connection_pool.get_connection() as conn:
+            cur = conn.cursor()
+            # Return the details of all jobs including project details
+            cur.execute('''SELECT j.id, j.status, j.log_file, p.name as project_name, p.success_count, p.failure_count 
+                        FROM jobs j
+                        JOIN projects p ON j.project_id = p.id''')
+            jobs = []
+            for row in cur.fetchall():
+                job = {
+                    "id": row[0],
+                    "status": row[1],
+                    "log_file": row[2],
+                    "project_name": row[3],
+                    "success_count": str(row[4]),  # Convert to string
+                    "failure_count": str(row[5])   # Convert to string
+                }
+                jobs.append(job)
+            return jobs
+        
+    except sqlite3.Error as e:
+        print(f"Error logging build request: {e}")
+    
 
 @app.post("/webhook")
 async def github_webhook(request: Request, background_tasks: BackgroundTasks):
@@ -293,31 +316,36 @@ def deploy_project_background(project_name: str, project_dir: str, log_file_path
         update_project_counts(project_name, False)
 
 def get_or_create_project_id(project_name: str) -> int:
-    conn = sqlite3.connect(DB_FILE)  # Establish connection
-    cur = conn.cursor()
     try:
-        cur.execute("SELECT id FROM projects WHERE name=?", (project_name,))
-        row = cur.fetchone()
-        if row:
-            return row[0]
-        else:
-            cur.execute("INSERT INTO projects (name) VALUES (?)", (project_name,))
-            conn.commit()
-            return cur.lastrowid
-    finally:
-        conn.close()  # Close the connection
+        with connection_pool.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT id FROM projects WHERE name=?", (project_name,))
+            row = cur.fetchone()
+            if row:
+                return row[0]
+            else:
+                cur.execute("INSERT INTO projects (name) VALUES (?)", (project_name,))
+                conn.commit()
+                return cur.lastrowid
+            
+    except sqlite3.Error as e:
+        print(f"Error logging build request: {e}")
 
 def update_project_counts(project_name: str, success: bool):
-    conn = sqlite3.connect(DB_FILE)  # Establish connection
-    cur = conn.cursor()
     try:
+        with connection_pool.get_connection() as conn:
+            cur = conn.cursor()
         if success:
             cur.execute("UPDATE projects SET success_count = success_count + 1 WHERE name=?", (project_name,))
         else:
             cur.execute("UPDATE projects SET failure_count = failure_count + 1 WHERE name=?", (project_name,))
         conn.commit()
-    finally:
-        conn.close()  # Close the connection
+
+    except sqlite3.Error as e:
+        print(f"Error logging build request: {e}")
+
+
+first_time_database_init()
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=1111)
