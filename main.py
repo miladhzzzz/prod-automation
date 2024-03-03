@@ -43,9 +43,11 @@ def first_time_database_init():
                             (id TEXT PRIMARY KEY, project_id INTEGER, status TEXT, log_file TEXT,
                             FOREIGN KEY(project_id) REFERENCES projects(id))''')
             conn.commit()
-            conn.close()
     except sqlite3.Error as e:
         print(f"Error logging build request: {e}")
+
+    finally:
+        conn.close()
     
 def read_exposed_ports_from_dockerfile(dockerfile_path: str) -> List[int]:
     exposed_ports = []
@@ -77,9 +79,11 @@ def log_build_request(project_name: str, status: str):
             cur.execute("INSERT INTO jobs (id, project_id, status, log_file) VALUES (?, ?, ?, ?)", 
                         (uuid.uuid4().hex, get_or_create_project_id(project_name), status, f"{project_name}.log"))
             conn.commit()
-            conn.close()
     except sqlite3.Error as e:
         print(f"Error logging build request: {e}")
+
+    finally:
+        conn.close()
 
 def get_build_status(project_name: str) -> Dict[str, str]:
     try:
@@ -97,7 +101,6 @@ def get_build_status(project_name: str) -> Dict[str, str]:
                 if os.path.exists(log_file_path):
                     with open(log_file_path, "r") as log:
                         log_content = log.read()
-                    cur.close()
                     return {"status": status, "output": log_content}
                 else:
                     return {"status": "not_started", "output": f"Build log for {project_name} not available."}
@@ -105,6 +108,8 @@ def get_build_status(project_name: str) -> Dict[str, str]:
                 return {"status": "not_started", "output": f"No build record found for {project_name}."}
     except sqlite3.Error as e:
         print(f"Error retrieving build status: {e}")
+    finally:
+        conn.close()
 
 def deploy_with_docker_compose(project_name: str, compose_file_path: str, log_file_path: str):
     try:
@@ -183,11 +188,12 @@ async def get_projects() -> List[str]:
             # Return the names of all projects for which build logs are available
             cur.execute("SELECT DISTINCT name FROM projects")
             projects = [row[0] for row in cur.fetchall()]
-            cur.close()
             return projects
         
     except sqlite3.Error as e:
         print(f"Error logging build request: {e}")
+    finally:
+        conn.close()
 
 @app.get("/jobs")
 async def get_jobs() -> List[Dict[str, str]]:
@@ -210,11 +216,13 @@ async def get_jobs() -> List[Dict[str, str]]:
                     "failure_count": str(row[5])   # Convert to string
                 }
                 jobs.append(job)
-            cur.close()
             return jobs
         
     except sqlite3.Error as e:
         print(f"Error logging build request: {e}")
+
+    finally:
+        conn.close()
     
 
 @app.post("/webhook")
@@ -327,17 +335,16 @@ def get_or_create_project_id(project_name: str) -> int:
             cur.execute("SELECT id FROM projects WHERE name=?", (project_name,))
             row = cur.fetchone()
             if row:
-                cur.close()
                 return row[0]
             else:
                 cur.execute("INSERT INTO projects (name) VALUES (?)", (project_name,))
                 conn.commit()
-                conn.close()
                 return cur.lastrowid
-            
             
     except sqlite3.Error as e:
         print(f"Error logging build request: {e}")
+    finally:
+        conn.close()
 
 def update_project_counts(project_name: str, success: bool):
     try:
@@ -348,13 +355,13 @@ def update_project_counts(project_name: str, success: bool):
         else:
             cur.execute("UPDATE projects SET failure_count = failure_count + 1 WHERE name=?", (project_name,))
         conn.commit()
-        conn.close()
 
     except sqlite3.Error as e:
         print(f"Error logging build request: {e}")
-
-
-first_time_database_init()
+    finally:
+        conn.close()
 
 if __name__ == "__main__":
+    
+    first_time_database_init()
     uvicorn.run("main:app", host="0.0.0.0", port=1111)
