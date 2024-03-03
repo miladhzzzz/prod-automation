@@ -4,7 +4,9 @@ from typing import Optional, List, Dict
 from queue import Queue
 from threading import Lock
 
+# Connection pool
 class ConnectionPool:
+
     DB_FILE = "builds.db"
 
     def __init__(self, max_connections: int = 10):
@@ -16,23 +18,26 @@ class ConnectionPool:
             connection = sqlite3.connect(self.DB_FILE, check_same_thread=False)
             self._connections.put(connection)
 
+    def execute(self, query: str, args: Optional[tuple] = None) -> Cursor:
+        with self.get_connection() as connection:
+            cursor = connection.cursor()
+            cursor.execute(query, args)
+            return cursor
+
     def get_connection(self) -> Connection:
-        return self._connections.get()
+        return ConnectionContextManager(self)
 
     def release_connection(self, connection: Connection):
         self._connections.put(connection)
 
-    def execute(self, query: str, args: Optional[tuple] = None) -> Cursor:
-        connection = self.get_connection()
-        cursor = connection.cursor()
-        try:
-            cursor.execute(query, args)
-            connection.commit()
-            return cursor
-        except Exception as e:
-            # Handle exceptions appropriately (e.g., log the error)
-            print(f"Error executing query: {e}")
-            connection.rollback()
-            raise
-        finally:
-            self.release_connection(connection)
+class ConnectionContextManager:
+    def __init__(self, connection_pool: ConnectionPool):
+        self.connection_pool = connection_pool
+        self.connection = None
+
+    def __enter__(self) -> Connection:
+        self.connection = self.connection_pool._connections.get()
+        return self.connection
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.connection_pool.release_connection(self.connection)
