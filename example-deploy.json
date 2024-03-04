@@ -1,0 +1,14 @@
+{
+    "owner": "your_github_username",
+    "repo": "your_repository_name",
+    "env_vars": [
+      {
+        "key": "ENV_VAR_1",
+        "value": "value1"
+      },
+      {
+        "key": "ENV_VAR_2",
+        "value": "value2"
+      }
+    ]
+  }
