@@ -1,5 +1,6 @@
-import hmac , os , json, subprocess ,logging , uvicorn, sqlite3, uuid, sentry_sdk
+import hmac , os , json, subprocess ,logging , uvicorn, sqlite3, uuid, sentry_sdk, base64
 from hashlib import sha1
+from cryptography.fernet import Fernet
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Request
 from pydantic import BaseModel
 from typing import Optional, List, Dict
@@ -11,6 +12,21 @@ sentry_sdk.init(
     profiles_sample_rate=1.0,
     enable_tracing=True
 )
+
+# # Generate a secret key for encryption and decryption
+# SECRET_KEY = os.getenv("SECRET_KEY")
+# # Encode the secret key to ensure it's URL-safe base64
+# encoded_key = base64.urlsafe_b64encode(SECRET_KEY.encode())
+
+# cipher_suite = Fernet(SECRET_KEY)
+
+# # Encrypt function
+# def encrypt_data(data: str) -> bytes:
+#     return cipher_suite.encrypt(data.encode())
+
+# # Decrypt function
+# def decrypt_data(encrypted_data: bytes) -> str:
+#     return cipher_suite.decrypt(encrypted_data).decode()
 
 # initialize FastAPI
 app = FastAPI()
@@ -30,6 +46,10 @@ logging.basicConfig(filename=os.path.join(LOGS_DIR, "builds.log"), level=logging
 class Payload(BaseModel):
     repository: Optional[dict]
 
+class EnvironmentVariables(BaseModel):
+    key: str
+    value: str
+
 # Logic / Global / Background functions
 def first_time_database_init():
     try:
@@ -42,7 +62,13 @@ def first_time_database_init():
             cur.execute('''CREATE TABLE IF NOT EXISTS jobs 
                             (id TEXT PRIMARY KEY, project_id INTEGER, status TEXT, log_file TEXT,
                             FOREIGN KEY(project_id) REFERENCES projects(id))''')
+            
+            cur.execute('''CREATE TABLE IF NOT EXISTS project_environment_variables (
+                            id INTEGER PRIMARY KEY,
+                            project_name TEXT UNIQUE,
+                            environment_variables TEXT)''')
             conn.commit()
+
     except sqlite3.Error as e:
         print(f"Error logging build request: {e}")
     
@@ -124,7 +150,7 @@ def deploy_with_docker_compose(project_name: str, compose_file_path: str, log_fi
         log_build_request(project_name, "failure")
         update_project_counts(project_name, False)
 
-def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTasks):
+def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTasks , envs:str = None ):
     project_name = repo
     log_file = f"{project_name}.log"
     repo_url = f"https://github.com/{owner}/{repo}.git"
@@ -154,7 +180,7 @@ def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTask
             exposed_ports = read_exposed_ports_from_dockerfile(dockerfile_path)
 
             # Execute deployment using Dockerfile
-            background_tasks.add_task(deploy_project_background, project_name, project_dir, log_file_path, exposed_ports)
+            background_tasks.add_task(deploy_project_background, project_name, project_dir, log_file_path, exposed_ports, envs)
 
         # Log the job
         log_build_request(project_name, "started")
@@ -240,6 +266,39 @@ async def github_webhook(request: Request, background_tasks: BackgroundTasks):
 async def deploy_project(owner: str, repo: str, background_tasks: BackgroundTasks):
     return deploy_project_logic(owner, repo, background_tasks)
 
+@app.post("/deploy")
+async def deploy_with_env(
+    owner: str,
+    repo: str,
+    env_vars: List[EnvironmentVariables],
+    background_tasks: BackgroundTasks
+):
+    # Build environment variables string in format "key1=value1 key2=value2 ..."
+    env_string = " ".join([f"{var.key}={var.value}" for var in env_vars])
+
+    # Run the container with environment variables using Docker command
+    return deploy_project_logic(owner, repo, background_tasks, env_string)
+
+
+# TODO : needs fixing
+@app.post("/set_env/{project_name}")
+async def set_environment_variables(project_name: str, variables: dict):
+    try:
+        # Encrypt and store each environment variable in the database
+        with connection_pool.get_connection() as conn:
+            cursor = conn.cursor()
+            for key, value in variables.items():
+                encrypted_value = "encrypt_data(value)"
+                cursor.execute(
+                    "INSERT OR REPLACE INTO project_environment_variables (project_name, variable_name, variable_value) VALUES (?, ?, ?)",
+                    (project_name, key, encrypted_value)
+                )
+            conn.commit()
+    except sqlite3.Error as e:
+        raise HTTPException(status_code=500, detail=f"Error setting environment variables: {e}")
+    
+    return {"message": "Environment variables set successfully"}
+
 @app.get("/revert/{owner}/{repo}/{revert_type}")
 async def revert_changes(
     owner: str ,
@@ -279,6 +338,28 @@ async def stop_and_remove_containers(project_name: str):
         return {"message": f"Failed to stop and remove containers for project {project_name}. Error: {str(e)}"}, 500
 
 # Helper functions
+
+#TODO: needs fixing
+def get_env_vars(project_name):
+    try:
+        # Retrieve encrypted environment variables from the database
+        with connection_pool.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT variable_name, variable_value FROM project_environment_variables WHERE project_name = ?",
+                (project_name,)
+            )
+            records = cursor.fetchall()
+
+        # if records:
+        #     # Decrypt the encrypted values and return the decrypted environment variables
+        #     decrypted_variables = {record[0]: decrypt_data(record[1]) for record in records}
+        #     return decrypted_variables
+              
+        return None
+    except sqlite3.Error as e:
+        raise "Error retrieving environment variables: {e}"
+
 def stop_and_remove_container(container_name: str):
     try:
         subprocess.run(["docker", "inspect", container_name], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -288,12 +369,12 @@ def stop_and_remove_container(container_name: str):
     subprocess.run(["docker", "stop", container_name], check=True)
     subprocess.run(["docker", "rm", container_name], check=True)
 
-def deploy_project_background(project_name: str, project_dir: str, log_file_path: str, exposed_ports: List[int]):
+def deploy_project_background(project_name: str, project_dir: str, log_file_path: str, exposed_ports: List[int], envs:str = None):
     try:
         stop_and_remove_container(project_name)
         with open(log_file_path, "a") as log:
             subprocess.run(["docker", "build", "-t", project_name.lower(), project_dir], stdout=log, stderr=subprocess.STDOUT, check=True)
-        
+
         # Construct the command to run the container
         run_command = ["docker", "run", "-d", "--name", project_name]
         
@@ -301,7 +382,10 @@ def deploy_project_background(project_name: str, project_dir: str, log_file_path
         if exposed_ports:
             for port in exposed_ports:
                 run_command.extend(["-p", f"{port}:{port}"])
-        
+
+        if envs:
+            run_command.extend(["-e", f"{envs}"])
+
         # Add the image name
         run_command.append(project_name.lower())
         
