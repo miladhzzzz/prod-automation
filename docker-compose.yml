@@ -34,7 +34,7 @@ services:
       - "3000:3000"
 
     labels:
-      - "traefik.http.routers.prod-auto.rule=PathPrefix(`/monitor`)"
+      - "traefik.http.routers.grafana.rule=PathPrefix(`/monitor`)"
 
 # our services
   prod-auto:
