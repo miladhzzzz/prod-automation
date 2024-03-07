@@ -11,8 +11,8 @@ services:
       - "--providers.docker=true"
       - "--log.level=DEBUG"  # Adjust log level as needed
       - "--metrics.prometheus=true"
-      - "--accesslog"
-      - "--tracing=true"      
+      - "--accesslog=true"
+      # - "--tracing=true"      
       - "--metrics.prometheus.buckets=0.1,0.3,1.2,5.0"
       - "--metrics.prometheus.addEntryPointsLabels=true"
       - "--entrypoints.web.address=:80"
