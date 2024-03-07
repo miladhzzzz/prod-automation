@@ -7,10 +7,11 @@ services:
     image: traefik:v2.11
     # Enables the web UI and tells Traefik to listen to docker
     command:
-      - "--api.insecure=true"
       - "--providers.docker=true"
       - "--log.level=DEBUG"  # Adjust log level as needed
       - "--metrics.prometheus=true"
+      - "--accesslog"
+      - "--tracing=true"      
       - "--metrics.prometheus.buckets=0.1,0.3,1.2,5.0"
       - "--metrics.prometheus.addEntryPointsLabels=true"
       - "--entrypoints.web.address=:80"
@@ -23,6 +24,13 @@ services:
       # So that Traefik can listen to the Docker events
       - "/var/run/docker.sock:/var/run/docker.sock"
 
+  # monitoring
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+      
+# our services
   prod-auto:
     build:
       context: .
