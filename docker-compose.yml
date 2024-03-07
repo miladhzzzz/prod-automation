@@ -14,6 +14,8 @@ services:
       - "--accesslog=true"
       # - "--tracing=true"      
       - "--metrics.prometheus.buckets=0.1,0.3,1.2,5.0"
+      - "--metrics.prometheus.addrouterslabels=true"
+      - "--metrics.prometheus.addServicesLabels=true"
       - "--metrics.prometheus.addEntryPointsLabels=true"
       - "--entrypoints.web.address=:80"
     ports:
@@ -30,6 +32,9 @@ services:
     image: grafana/grafana
     ports:
       - "3000:3000"
+
+    labels:
+      - "traefik.http.routers.prod-auto.rule=PathPrefix(`/monitor`)"
 
 # our services
   prod-auto:
