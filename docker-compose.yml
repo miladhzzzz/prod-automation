@@ -31,9 +31,7 @@ services:
       - "1111:1111"  # Adjust port if necessary
     labels:
       - "traefik.http.routers.prod-auto.rule=PathPrefix(`/prod`)"
-      - "traefik.http.middlewares.strip-prefix.stripprefixregex.regex=^/prod"
-      - "traefik.http.middlewares.strip-prefix.stripprefixregex.replacement="
-      - "traefik.http.routers.prod-auto.middlewares=strip-prefix@docker"
+      - "traefik.http.middlewares.prod-auto.stripprefix.prefixes=/prod"
     volumes:
       # So that Traefik can listen to the Docker events
       - "/var/run/docker.sock:/var/run/docker.sock"
