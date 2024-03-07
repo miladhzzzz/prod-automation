@@ -24,3 +24,9 @@ services:
       - "1111:1111"  # Adjust port if necessary
     labels:
       - "traefik.http.routers.prod-auto.rule=PathPrefix(`/prod`)"
+
+    volumes:
+      # So that Traefik can listen to the Docker events
+      - /var/run/docker.sock:/var/run/docker.sock
+      
+    privileged: true
