@@ -26,8 +26,6 @@ services:
     volumes:
       # So that Traefik can listen to the Docker events
       - "/var/run/docker.sock:/var/run/docker.sock"
-    networks:
-      - prod-net
 
   # monitoring
   grafana:
@@ -59,12 +57,4 @@ services:
 
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
-
-    networks:
-      - prod-net
     privileged: true
-
-
-networks:
-  prod-net:
-    driver: bridge
