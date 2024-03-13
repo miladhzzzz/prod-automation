@@ -15,7 +15,8 @@ RUN curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-c
 RUN chmod +x /usr/local/bin/docker-compose
 
 WORKDIR /app
-COPY . .
+
+COPY ./app .
 
 EXPOSE 1111
 

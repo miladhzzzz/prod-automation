@@ -29,7 +29,7 @@ sentry_sdk.init(
 #     return cipher_suite.decrypt(encrypted_data).decode()
 
 # initialize FastAPI
-app = FastAPI()
+app = FastAPI(docs_url=None, redoc_url=None)
 
 # Initialize connection pool
 connection_pool = ConnectionPool()
@@ -431,4 +431,4 @@ def update_project_counts(project_name: str, success: bool):
 if __name__ == "__main__":
 
     first_time_database_init()
-    uvicorn.run("main:app", host="0.0.0.0", port=1111)
+    uvicorn.run("main:app", host="127.0.0.1", port=1111)
