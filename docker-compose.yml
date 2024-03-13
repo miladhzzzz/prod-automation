@@ -33,9 +33,6 @@ services:
     ports:
       - "3000:3000"
 
-    labels:
-      - "traefik.http.routers.grafana.rule=PathPrefix(`/monitor`)"
-
   prometheus:
     image: prom/prometheus
     ports:
@@ -50,14 +47,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+
     ports:
-      - "1111"  # Adjust port if necessary
+      - "1111:1111"  # Adjust port if necessary
     labels:
       - "traefik.http.routers.prod-auto.rule=PathPrefix(`/prod`)"
       - "traefik.http.middlewares.prod-auto.stripprefix.prefixes=/prod"
       - "traefik.http.routers.prod-auto.middlewares=prod-auto@docker"
 
     volumes:
-      # So that Traefik can listen to the Docker events
       - "/var/run/docker.sock:/var/run/docker.sock"
     privileged: true
