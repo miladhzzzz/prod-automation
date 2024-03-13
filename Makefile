@@ -1,15 +1,30 @@
-# up: bring everything up
+# Variables
+COMPOSE=docker-compose
+
+# Targets
+build:
+	@echo "Building Docker images..."
+	@$(COMPOSE) build
+	@echo "Build complete."
+
 up:
-	docker-compose up -d
+	@echo "Bringing up services..."
+	@$(COMPOSE) up -d
+	@echo "Services are up and running."
 
-# down: shut everything down
-down: 
-	docker-compose down
+down:
+	@echo "Shutting down services..."
+	@$(COMPOSE) down
+	@echo "Services are down."
 
-# solo: will bring up only the prod-auto machine
 solo:
-	./init.sh
+	@echo "Bringing up prod-auto service..."
+	@./init.sh
+	@echo "prod-auto service is up."
 
-# sync: syncs the code with upstream using git pull
 sync:
-	git pull
+	@echo "Syncing code with upstream..."
+	@git pull
+	@echo "Sync complete."
+
+.PHONY: build up down solo sync
