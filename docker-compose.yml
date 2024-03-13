@@ -44,14 +44,14 @@ services:
       - "./prometheus:/etc/prometheus"
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
-      
+
 # our services
   prod-auto:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "1111:1111"  # Adjust port if necessary
+      - "1111"  # Adjust port if necessary
     labels:
       - "traefik.http.routers.prod-auto.rule=PathPrefix(`/prod`)"
       - "traefik.http.middlewares.prod-auto.stripprefix.prefixes=/prod"
