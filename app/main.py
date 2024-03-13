@@ -29,7 +29,7 @@ sentry_sdk.init(
 #     return cipher_suite.decrypt(encrypted_data).decode()
 
 # initialize FastAPI
-app = FastAPI(docs_url=None, redoc_url=None)
+app = FastAPI(docs_url=None, redoc_url=None, openapi_url= None)
 
 # Initialize connection pool
 connection_pool = ConnectionPool()
