@@ -1,4 +1,4 @@
-# Project Name: Automagic DevOps Pipeline
+# Automagic DevOps Pipeline
 
 ## Introduction
 
@@ -10,39 +10,49 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
 
 ## Key Features
 
-- GitHub Webhook Integration: Seamlessly trigger pipeline workflows with GitHub webhook events, ensuring your CI/CD processes kick off automatically with every code push.
-
-- Continuous Integration (CI): Effortlessly build and test your applications on every commit, ensuring code quality and reliability before deployment.
-
-- Continuous Deployment (CD): Automatically deploy your applications to production or staging environments after successful CI runs, with minimal manual intervention.
-
-- Docker Containerization: Harness the power of Docker to package your applications and dependencies into portable containers, guaranteeing consistency across different environments.
-
-- Logging and Monitoring: Gain insights into your pipeline executions and application performance with robust logging and monitoring solutions, enabling proactive issue detection and resolution.
-
-- Database Integration: Store project metadata and build information in a SQLite database, providing a centralized repository for tracking and reporting pipeline activity.
+- **GitHub Webhook Integration:** Seamlessly trigger pipeline workflows with GitHub webhook events, ensuring your CI/CD processes kick off automatically with every code push.
+  
+- **Continuous Integration (CI):** Effortlessly build and test your applications on every commit, ensuring code quality and reliability before deployment.
+  
+- **Continuous Deployment (CD):** Automatically deploy your applications to production or staging environments after successful CI runs, with minimal manual intervention.
+  
+- **Docker Containerization:** Harness the power of Docker to package your applications and dependencies into portable containers, guaranteeing consistency across different environments.
+  
+- **Logging and Monitoring:** Gain insights into your pipeline executions and application performance with robust logging and monitoring solutions, enabling proactive issue detection and resolution.
+  
+- **Database Integration:** Store project metadata and build information in a SQLite database, providing a centralized repository for tracking and reporting pipeline activity.
 
 ## Get Started
 
-- Clone the Repository: Get started by cloning the Automagic DevOps Pipeline repository to your local machine.
-
-- Install Dependencies: Install the required dependencies using pip install -r requirements.txt.
-
-- Configure Environment: Set up environment variables, including your GitHub webhook secret and database configurations.
-
-- Run the Application: Launch the application using uvicorn main:app --reload.
-
-- Set Up Webhook: Configure a GitHub webhook to point to the /webhook endpoint of your deployed application, enabling automated pipeline triggering.
+1. **Clone the Repository:** Get started by cloning the Automagic DevOps Pipeline repository to your local machine.
+  
+2. **Run Setup Script:** Execute the Makefile or init.sh script provided in the repository to automate the setup and initialization process.
+  
+3. **Deploy System Components:** Deploy the entire system, including Traefik reverse proxy, Grafana, Prometheus for observability, and the production automation container.
+  
+4. **Utilize Docker Compose:** Use a `docker-compose.yml` in the root of your repository or a Dockerfile to build your project and define services.
+  
+5. **Track Pipeline Status:** Keep track of the pipeline status in a SQLite database for monitoring and reporting purposes.
+  
+6. **Set Environment Variables:** Use the API endpoint to set environment variables for projects, ensuring smooth application execution without manual intervention.
+  
+7. **Automate Build Triggers:** Trigger builds automatically when a webhook event is received, with the necessary environment variables pre-configured for seamless deployment.
 
 ## Experience the Magic
 
-- Push Code Changes: Simply push your code changes to your GitHub repository.
+- **Push Code Changes:** Simply push your code changes to your GitHub repository.
+  
+- **Automated Workflows:** Watch as the Automagic DevOps Pipeline automates build, test, and deployment tasks seamlessly.
+  
+- **Monitor and Manage:** Keep tabs on your pipeline status and logs using the provided endpoints, ensuring smooth sailing throughout the development journey.
 
-- Automated Workflows: Watch as the Automagic DevOps Pipeline springs into action, automating build, test, and deployment tasks seamlessly.
+- **Version Control:** we Keep your projects updated using Git version control so you can easily revert breaking changes with a single GET request.
 
-- Monitor and Manage: Keep tabs on your pipeline status and logs using the provided endpoints, ensuring smooth sailing throughout the development journey.
+- **Reverse Proxy:** we also use Traefik reverse proxy you can set labels in your docker-compose to expose this services dynamically!.
 
-- Enjoy Deployments: Access your deployed applications in the specified environments, knowing they've been delivered with speed, reliability, and a touch of magic!
+- **Observability** we use Prometheus / Grafana to monitor the traefik entry point we also have a /prometheus config dir you can change it to observe all your containers or other components easily!
+  
+- **Enjoy Deployments:** Access your deployed applications in the specified environments, knowing they've been delivered with speed, reliability, and a touch of magic!
 
 ## Join the Journey
 

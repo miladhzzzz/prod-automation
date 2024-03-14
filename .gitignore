@@ -3,3 +3,4 @@ projects/**
 build_logs
 __pycache__
 ttest.py
+.vscode
