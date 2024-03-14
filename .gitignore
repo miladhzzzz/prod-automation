@@ -2,5 +2,5 @@ builds.db
 projects/**
 build_logs
 __pycache__
-ttest.py
+dev/**
 .vscode
