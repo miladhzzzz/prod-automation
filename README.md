@@ -25,10 +25,35 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
 ## Get Started
 
 1. **Clone the Repository:** Get started by cloning the Automagic DevOps Pipeline repository to your local machine.
-  
+
+    ```shell
+        git clone https://github.com/miladhzzzz/prod-automation
+    ```
+
 2. **Run Setup Script:** Execute the Makefile or init.sh script provided in the repository to automate the setup and initialization process.
+
+    ```shell
+        # Setting up the host if its freshly installed skip this whole section if you have docker / docker-compose / git installed!!
+        make setup
+
+        # or you can manually execute the setup-host.sh
+        cd scripts
+        chmod +x setup-host.sh
+        ./setup-host.sh
+    ```
   
 3. **Deploy System Components:** Deploy the entire system, including Traefik reverse proxy, Grafana, Prometheus for observability, and the production automation container.
+
+    ```shell
+        # make up will build and run every component we need
+        make up
+        # you can alternatively run the production automation in stand alone mode with init.sh!
+        # this will only run the python API application for development!
+        chmod +x init.sh
+        ./init.sh
+        # OR
+        make solo
+    ```
   
 4. **Utilize Docker Compose:** Use a `docker-compose.yml` in the root of your repository or a Dockerfile to build your project and define services.
   
