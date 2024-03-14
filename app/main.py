@@ -221,4 +221,4 @@ async def stop_and_remove_containers(project_name: str):
 
 if __name__ == "__main__":
     helpers.first_time_database_init(connection_pool)
-    uvicorn.run("test:app", host="0.0.0.0", port=1111)
+    uvicorn.run("main:app", host="0.0.0.0", port=1111)
