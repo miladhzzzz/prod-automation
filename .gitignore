@@ -1,5 +1,5 @@
 builds.db
-projects/**
+app/projects/**
 build_logs
 __pycache__
 dev/**
