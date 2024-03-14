@@ -27,4 +27,9 @@ sync:
 	@git pull
 	@echo "Sync complete."
 
-.PHONY: build up down solo sync
+setup:
+	@echo "Setting up the host OS..."
+	@cd scripts && chmod +x setup-host.sh && ./setup-host.sh
+	@echo "Setup complete! now use make up."
+
+.PHONY: build up down solo sync setup
