@@ -2,12 +2,38 @@ version: '3.9'
 
 services:
 
+# reverse proxy with SSL termination
+
+  # reverse-proxy:
+  #   image: traefik:v2.11
+  #   command:
+  #     - "--providers.docker=true"
+  #     - "--log.level=DEBUG"
+  #     - "--metrics.prometheus=true"
+  #     - "--accesslog=true"
+  #     - "--metrics.prometheus.buckets=0.1,0.3,1.2,5.0"
+  #     - "--metrics.prometheus.addrouterslabels=true"
+  #     - "--metrics.prometheus.addServicesLabels=true"
+  #     - "--metrics.prometheus.addEntryPointsLabels=true"
+  #     - "--entrypoints.websecure.address=:443"  # Add this line for HTTPS
+  #     - "--certificatesresolvers.myresolver.acme.httpchallenge=true"  # Enable ACME (Let's Encrypt) for automatic certificate generation
+  #     - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+  #     - "--certificatesresolvers.myresolver.acme.email=your.email@example.com"  # Your email for Let's Encrypt notifications
+  #     - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"  # Persistent storage for certificates
+
+  #   ports:
+  #     - "443:443"  # Expose HTTPS port
+
+  #   volumes:
+  #     - "/var/run/docker.sock:/var/run/docker.sock"
+  #     - "/path/to/ssl/certs:/ssl"  # Mount SSL certificates
+
   reverse-proxy:
     # The official v2 Traefik docker image
     image: traefik:v2.11
     # Enables the web UI and tells Traefik to listen to docker
     command:
-      # - "--api.insecure=true"
+      - "--api.insecure=true"
       - "--providers.docker=true"
       - "--log.level=DEBUG"  # Adjust log level as needed
       - "--metrics.prometheus=true"
