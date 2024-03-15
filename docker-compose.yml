@@ -48,8 +48,8 @@ services:
       context: .
       dockerfile: Dockerfile
 
-    ports:
-      - "1111:1111"  # Adjust port if necessary
+    ports: []
+      # - "1111:1111"  # Adjust port if necessary
     labels:
       - "traefik.http.routers.prod-auto.rule=PathPrefix(`/prod`)"
       - "traefik.http.middlewares.prod-auto.stripprefix.prefixes=/prod"
