@@ -36,6 +36,7 @@ def deploy_with_docker_compose(project_name: str, compose_file_path: str, log_fi
 
         # Build and start the services defined in the docker-compose file
         with open(log_file_path, "a") as log:
+            subprocess.run(["docker-compose", "-f", compose_file_path, "build"], stdout=log, stderr=subprocess.STDOUT, check=True)
             subprocess.run(["docker-compose", "-f", compose_file_path, "up", "-d"], stdout=log, stderr=subprocess.STDOUT, check=True)
 
         logs.log_build_request(project_name, "success")
