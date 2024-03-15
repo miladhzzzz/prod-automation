@@ -1,8 +1,18 @@
 from hashlib import sha1
-import hmac, os , sqlite3
+import hmac, os , sqlite3, socket
 from fastapi import HTTPException
 
 GITHUB_WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET")
+
+def get_container_ip():
+
+    # Get the container's hostname
+    hostname = socket.gethostname()
+
+    # Get the container's IP address
+    container_ip = socket.gethostbyname(hostname)
+
+    return container_ip
 
 def verify_signature(payload: bytes, signature: str):
     if GITHUB_WEBHOOK_SECRET:
