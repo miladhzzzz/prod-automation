@@ -60,7 +60,7 @@ services:
       - "3000:3000"
     volumes:
       - ./monitoring/grafana/grafana-config.yml:/etc/grafana/provisioning/datasources/datasource.yml
-      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards
+      - ./monitoring/grafana/dashboards/dashboard.json:/etc/grafana/dashboards/dashboard.json
 
   prometheus:
     image: prom/prometheus
