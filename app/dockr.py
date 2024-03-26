@@ -17,9 +17,27 @@ def read_exposed_ports_from_dockerfile(dockerfile_path: str) -> List[int]:
                         print(f"Invalid port number: {port}")
     return exposed_ports
 
+def docker_restart_container(container_name: str):
+    try:
+        # Check if the container exists
+        subprocess.run(["docker", "inspect", container_name], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        
+        # Check if the container was deployed using docker-compose
+        compose_file_path = os.path.join("projects", container_name, "docker-compose.yml")
+
+        if os.path.exists(compose_file_path):
+            subprocess.run(["docker-compose", "-f", compose_file_path, "restart", container_name], check=True)
+            print(f"Container {container_name} restarted successfully using docker-compose.")
+        else:
+            subprocess.run(["docker", "restart", container_name], check=True)
+            print(f"Container {container_name} restarted successfully using docker run.")
+
+    except subprocess.CalledProcessError as e:
+        print(f"Error restarting container {container_name}: {e}")
+
 def stop_and_remove_container(container_name: str):
-    project_dir = os.path.abspath(os.path.join("projects", container_name))
-    compose_file_path = os.path.join(project_dir, "docker-compose.yml")
+
+    compose_file_path = os.path.join("projects", container_name, "docker-compose.yml")
 
     if os.path.exists(compose_file_path):
         try:
@@ -91,3 +109,49 @@ def deploy_docker_run(project_name: str, project_dir: str, log_file_path: str, e
         print(f"Error deploying {project_name}: {e}")
         logs.log_build_request(project_name, "failure")
         logs.update_project_counts(project_name, False)
+
+def docker_push_image(image_name: str, registry_url: str):
+    try:
+        subprocess.run(["docker", "push", f"{registry_url}/{image_name}"], check=True)
+        print(f"Image {image_name} pushed to {registry_url} successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"Error pushing image {image_name} to {registry_url}: {e}")
+   
+def get_container_logs(container_name: str):
+    # Attempt to get logs for the exact container name
+    container_logs = subprocess.run(["docker", "logs", container_name], capture_output=True, text=True)
+    
+    if container_logs.returncode == 0:
+        return container_logs.stdout
+    else:
+        # If logs retrieval fails, try to find logs for a container with the repository name as a part of the container name
+        all_container_names = subprocess.run(["docker", "ps", "--format", "{{.Names}}"], capture_output=True, text=True)
+        for name in all_container_names.stdout.splitlines():
+            if container_name in name:
+                container_logs = subprocess.run(["docker", "logs", name], capture_output=True, text=True)
+                if container_logs.returncode == 0:
+                    return container_logs.stdout
+
+    return "Logs not found for the specified container name."
+
+def get_project_containers(project_name: str) -> List[Dict[str, str]]:
+    container_info = []
+    
+    all_container_names = subprocess.run(["docker", "ps", "-a", "--format", "{{.Names}}"], capture_output=True, text=True)
+    
+    for name in all_container_names.stdout.splitlines():
+        if project_name in name:
+            container_details = subprocess.run(["docker", "inspect", "--format='{{.State.Status}} {{.State.StartedAt}} {{.State.FinishedAt}}'", name], capture_output=True, text=True)
+            details = container_details.stdout.strip().split()
+            status = details[0]
+            started_at = details[1]
+            finished_at = details[2]
+            
+            container_info.append({
+                "container_name": name,
+                "status": status,
+                "started_at": started_at,
+                "finished_at": finished_at
+            })
+    
+    return container_info
