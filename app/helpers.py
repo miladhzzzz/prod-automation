@@ -42,3 +42,11 @@ def first_time_database_init(connection_pool):
 
     except sqlite3.Error as e:
         print(f"Error logging build request: {e}")
+
+def is_valid_kubeconfig(config_content: str) -> bool:
+    # Perform basic validation by checking for common kubeconfig keywords
+    required_keywords = ["apiVersion", "kind", "clusters", "users", "contexts"]
+    for keyword in required_keywords:
+        if keyword not in config_content:
+            return False
+    return True
