@@ -8,19 +8,26 @@ Welcome to the Automagic DevOps Pipeline -- your all-in-one solution for effortl
 
 The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to simplify and streamline your development process from start to finish. Whether you're a solo developer or part of a team, this platform empowers you to automate tedious tasks, accelerate delivery, and ensure consistent, reliable deployments every time.
 
+## Architecture
+
+* **Highlevel Design of the System.**
+* feel free to open an ISSUE mentioning any problems or ideas you might have!
+
+  ![](arch/prod-auto.png)
+
 ## Key Features
 
-- **GitHub Webhook Integration:** Seamlessly trigger pipeline workflows with GitHub webhook events, ensuring your CI/CD processes kick off automatically with every code push.
+* **GitHub Webhook Integration:** Seamlessly trigger pipeline workflows with GitHub webhook events, ensuring your CI/CD processes kick off automatically with every code push.
   
-- **Continuous Integration (CI):** Effortlessly build and test your applications on every commit, ensuring code quality and reliability before deployment.
+* **Continuous Integration (CI):** Effortlessly build and test your applications on every commit, ensuring code quality and reliability before deployment.
   
-- **Continuous Deployment (CD):** Automatically deploy your applications to production or staging environments after successful CI runs, with minimal manual intervention.
+* **Continuous Deployment (CD):** Automatically deploy your applications to production or staging environments after successful CI runs, with minimal manual intervention.
   
-- **Docker Containerization:** Harness the power of Docker to package your applications and dependencies into portable containers, guaranteeing consistency across different environments.
+* **Docker Containerization:** Harness the power of Docker to package your applications and dependencies into portable containers, guaranteeing consistency across different environments.
   
-- **Logging and Monitoring:** Gain insights into your pipeline executions and application performance with robust logging and monitoring solutions, enabling proactive issue detection and resolution.
+* **Logging and Monitoring:** Gain insights into your pipeline executions and application performance with robust logging and monitoring solutions, enabling proactive issue detection and resolution.
   
-- **Database Integration:** Store project metadata and build information in a SQLite database, providing a centralized repository for tracking and reporting pipeline activity.
+* **Database Integration:** Store project metadata and build information in a SQLite database, providing a centralized repository for tracking and reporting pipeline activity.
 
 ## Get Started
 
@@ -65,19 +72,19 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
 
 ## Experience the Magic
 
-- **Push Code Changes:** Simply push your code changes to your GitHub repository.
+* **Push Code Changes:** Simply push your code changes to your GitHub repository.
   
-- **Automated Workflows:** Watch as the Automagic DevOps Pipeline automates build, test, and deployment tasks seamlessly.
+* **Automated Workflows:** Watch as the Automagic DevOps Pipeline automates build, test, and deployment tasks seamlessly.
   
-- **Monitor and Manage:** Keep tabs on your pipeline status and logs using the provided endpoints, ensuring smooth sailing throughout the development journey.
+* **Monitor and Manage:** Keep tabs on your pipeline status and logs using the provided endpoints, ensuring smooth sailing throughout the development journey.
 
-- **Version Control:** we Keep your projects updated using Git version control so you can easily revert breaking changes with a single GET request.
+* **Version Control:** we Keep your projects updated using Git version control so you can easily revert breaking changes with a single GET request.
 
-- **Reverse Proxy:** we also use Traefik reverse proxy you can set labels in your docker-compose to expose this services dynamically!.
+* **Reverse Proxy:** we also use Traefik reverse proxy you can set labels in your docker-compose to expose this services dynamically!.
 
-- **Observability** we use Prometheus / Grafana to monitor the traefik entry point we also have a /prometheus config dir you can change it to observe all your containers or other components easily!
+* **Observability** we use Prometheus / Grafana to monitor the traefik entry point we also have a /prometheus config dir you can change it to observe all your containers or other components easily!
   
-- **Enjoy Deployments:** Access your deployed applications in the specified environments, knowing they've been delivered with speed, reliability, and a touch of magic!
+* **Enjoy Deployments:** Access your deployed applications in the specified environments, knowing they've been delivered with speed, reliability, and a touch of magic!
 
 ## Join the Journey
 
