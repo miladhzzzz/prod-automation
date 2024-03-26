@@ -56,14 +56,14 @@ def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTask
         compose_file_path = os.path.join(project_dir, "docker-compose.yml")
         if compose_file_path and os.path.exists(compose_file_path):
             # Use docker-compose to deploy the project
-            background_tasks.add_task(dockr.deploy_with_docker_compose, project_name, compose_file_path, log_file_path)
+            background_tasks.add_task(dockr.deploy_docker_compose, project_name, compose_file_path, log_file_path)
         else:
             # Read exposed ports from Dockerfile
             dockerfile_path = os.path.join(project_dir, "Dockerfile")
             exposed_ports = dockr.read_exposed_ports_from_dockerfile(dockerfile_path)
 
             # Execute deployment using Dockerfile
-            background_tasks.add_task(dockr.deploy_project_background, project_name, project_dir, log_file_path, exposed_ports, envs)
+            background_tasks.add_task(dockr.deploy_docker_run, project_name, project_dir, log_file_path, exposed_ports, envs)
 
         # Log the job
         log.log_build_request(project_name, "started")

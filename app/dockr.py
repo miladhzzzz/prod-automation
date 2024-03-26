@@ -42,7 +42,7 @@ def stop_and_remove_container(container_name: str):
     except subprocess.CalledProcessError as e:
         print(f"Error stopping and removing container {container_name} with docker: {e}")
 
-def deploy_with_docker_compose(project_name: str, compose_file_path: str, log_file_path: str):
+def deploy_docker_compose(project_name: str, compose_file_path: str, log_file_path: str):
     try:
         # Check if there are existing containers for the project
         existing_containers = subprocess.run(["docker-compose", "-f", compose_file_path, "ps", "-q"], capture_output=True, text=True)
@@ -62,7 +62,7 @@ def deploy_with_docker_compose(project_name: str, compose_file_path: str, log_fi
         logs.log_build_request(project_name, "failure")
         logs.update_project_counts(project_name, False)
 
-def deploy_project_background(project_name: str, project_dir: str, log_file_path: str, exposed_ports: List[int], envs:str = None):
+def deploy_docker_run(project_name: str, project_dir: str, log_file_path: str, exposed_ports: List[int], envs:str = None):
     try:
         stop_and_remove_container(project_name)
         with open(log_file_path, "a") as log:
@@ -86,7 +86,7 @@ def deploy_project_background(project_name: str, project_dir: str, log_file_path
         subprocess.run(run_command)
         
         logs.log_build_request(project_name, "success")
-        logs.update_project_counts(project_name, True)
+        logs.update_project_counts(project_name, True)  
     except subprocess.CalledProcessError as e:
         print(f"Error deploying {project_name}: {e}")
         logs.log_build_request(project_name, "failure")
