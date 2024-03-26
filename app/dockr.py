@@ -138,9 +138,8 @@ def get_project_containers(project_name: str) -> List[Dict[str, str]]:
     container_info = []
     
     all_container_names = subprocess.run(["docker", "ps", "-a", "--format", "{{.Names}}"], capture_output=True, text=True)
-    
     for name in all_container_names.stdout.splitlines():
-        if project_name in name:
+        if project_name.lower() in name:
             container_details = subprocess.run(["docker", "inspect", "--format='{{.State.Status}} {{.State.StartedAt}} {{.State.FinishedAt}}'", name], capture_output=True, text=True)
             details = container_details.stdout.strip().split()
             status = details[0]
@@ -153,5 +152,4 @@ def get_project_containers(project_name: str) -> List[Dict[str, str]]:
                 "started_at": started_at,
                 "finished_at": finished_at
             })
-    
     return container_info
