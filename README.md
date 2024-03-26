@@ -1,4 +1,4 @@
-# Automagic DevOps Pipeline
+# Automagic DevOps Pipeline / Container as a Service
 
 ## Introduction
 
@@ -41,9 +41,11 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
 
     ```shell
         # Setting up the host if its freshly installed skip this whole section if you have docker / docker-compose / git installed!!
+
         make setup
 
         # or you can manually execute the setup-host.sh
+
         cd scripts
         chmod +x setup-host.sh
         ./setup-host.sh
@@ -53,12 +55,16 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
 
     ```shell
         # make up will build and run every component we need
+
         make up
         # you can alternatively run the production automation in stand alone mode with init.sh!
         # this will only run the python API application for development!
+
         chmod +x init.sh
         ./init.sh
+
         # OR
+
         make solo
     ```
   
