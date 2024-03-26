@@ -52,6 +52,8 @@ services:
     volumes:
       # So that Traefik can listen to the Docker events
       - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - prod-auto-inet
 
   # monitoring
   grafana:
@@ -61,6 +63,8 @@ services:
     volumes:
       - ./monitoring/grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
       - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    networks:
+      - prod-auto-inet
 
   prometheus:
     image: prom/prometheus
@@ -70,6 +74,8 @@ services:
       - "./monitoring/prometheus:/etc/prometheus"
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
+    networks:
+      - prod-auto-inet
 
 # our services
   prod-auto:
@@ -87,3 +93,9 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     privileged: true
+    networks:
+      - prod-auto-inet
+
+networks:
+  prod-auto-inet:
+    driver: bridge
