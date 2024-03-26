@@ -64,9 +64,6 @@ def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTask
 
             # Execute deployment using Dockerfile
             background_tasks.add_task(dockr.deploy_docker_run, project_name, project_dir, log_file_path, exposed_ports, envs)
-
-        # Log the job
-        log.log_build_request(project_name, "started")
         
         # Provide immediate response to the user
         return {"message": f"Deployment started for {project_name}. Check status at /status/{project_name}"}
@@ -116,6 +113,10 @@ async def get_jobs() -> List[Dict[str, str]]:
                     "failure_count": str(row[5])   # Convert to string
                 }
                 jobs.append(job)
+                # Get container data associated with the project name
+                container_data = dockr.get_project_containers(row[3])
+                job["containers"] = container_data
+
             return jobs
         
     except sqlite3.Error as e:
@@ -162,6 +163,22 @@ async def deploy_with_env(
     # Run the container with environment variables using Docker command
     return deploy_project_logic(owner, repo, background_tasks, env_string)
 
+KUBE_CONFIG_PATH = os.path.expanduser("~/.kube/config")
+
+@app.post("/kubectl/config")
+async def kubectl_config(config: str):
+    if helpers.is_valid_kubeconfig(config):
+        if not os.path.exists(KUBE_CONFIG_PATH):
+            with open(KUBE_CONFIG_PATH, "w") as new_kubeconfig_file:
+                new_kubeconfig_file.write(config)
+        else:
+            with open(KUBE_CONFIG_PATH, "a") as kubeconfig_file:
+                kubeconfig_file.write(config)
+        
+        return {"message": "Kubeconfig content saved successfully."}
+    else:
+        return {"error": "Invalid kubeconfig content provided."}
+    
 # TODO : needs fixing
 @app.post("/set_env/{project_name}")
 async def set_environment_variables(project_name: str, variables: dict):
