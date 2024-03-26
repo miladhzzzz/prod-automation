@@ -1,5 +1,5 @@
 from typing import Optional, List, Dict
-import subprocess
+import subprocess, os
 import log as logs
 
 def read_exposed_ports_from_dockerfile(dockerfile_path: str) -> List[int]:
@@ -18,13 +18,29 @@ def read_exposed_ports_from_dockerfile(dockerfile_path: str) -> List[int]:
     return exposed_ports
 
 def stop_and_remove_container(container_name: str):
+    project_dir = os.path.abspath(os.path.join("projects", container_name))
+    compose_file_path = os.path.join(project_dir, "docker-compose.yml")
+
+    if os.path.exists(compose_file_path):
+        try:
+            existing_containers = subprocess.run(["docker-compose", "-f", compose_file_path, "ps", "-q"], capture_output=True, text=True)
+            if existing_containers.stdout:
+                subprocess.run(["docker-compose", "-f", compose_file_path, "down"], check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Error stopping and removing containers for {container_name} with docker-compose: {e}")
+            return
+
     try:
         subprocess.run(["docker", "inspect", container_name], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except subprocess.CalledProcessError:
+        print(f"Container {container_name} not found.")
         return
 
-    subprocess.run(["docker", "stop", container_name], check=True)
-    subprocess.run(["docker", "rm", container_name], check=True)
+    try:
+        subprocess.run(["docker", "stop", container_name], check=True)
+        subprocess.run(["docker", "rm", container_name], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error stopping and removing container {container_name} with docker: {e}")
 
 def deploy_with_docker_compose(project_name: str, compose_file_path: str, log_file_path: str):
     try:
