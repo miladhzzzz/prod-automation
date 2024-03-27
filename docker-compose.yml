@@ -2,32 +2,6 @@ version: '3.9'
 
 services:
 
-# reverse proxy with SSL termination
-
-  # reverse-proxy:
-  #   image: traefik:v2.11
-  #   command:
-  #     - "--providers.docker=true"
-  #     - "--log.level=DEBUG"
-  #     - "--metrics.prometheus=true"
-  #     - "--accesslog=true"
-  #     - "--metrics.prometheus.buckets=0.1,0.3,1.2,5.0"
-  #     - "--metrics.prometheus.addrouterslabels=true"
-  #     - "--metrics.prometheus.addServicesLabels=true"
-  #     - "--metrics.prometheus.addEntryPointsLabels=true"
-  #     - "--entrypoints.websecure.address=:443"  # Add this line for HTTPS
-  #     - "--certificatesresolvers.myresolver.acme.httpchallenge=true"  # Enable ACME (Let's Encrypt) for automatic certificate generation
-  #     - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
-  #     - "--certificatesresolvers.myresolver.acme.email=your.email@example.com"  # Your email for Let's Encrypt notifications
-  #     - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"  # Persistent storage for certificates
-
-  #   ports:
-  #     - "443:443"  # Expose HTTPS port
-
-  #   volumes:
-  #     - "/var/run/docker.sock:/var/run/docker.sock"
-  #     - "/path/to/ssl/certs:/ssl"  # Mount SSL certificates
-
   reverse-proxy:
     # The official v2 Traefik docker image
     image: traefik:v2.11
@@ -35,10 +9,10 @@ services:
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
+      # - "--providers.docker.exposedbydefault=false"  # Do not automatically expose found services
       - "--log.level=DEBUG"  # Adjust log level as needed
       - "--metrics.prometheus=true"
-      - "--accesslog=true"
-      # - "--tracing=true"      
+      - "--accesslog=true" 
       - "--metrics.prometheus.buckets=0.1,0.3,1.2,5.0"
       - "--metrics.prometheus.addrouterslabels=true"
       - "--metrics.prometheus.addServicesLabels=true"
@@ -86,6 +60,7 @@ services:
     ports: []
       # - "1111:1111"  # Adjust port if necessary
     labels:
+      # - "traefik.enable=true"
       - "traefik.http.routers.prod-auto.rule=PathPrefix(`/prod`)"
       - "traefik.http.middlewares.prod-auto.stripprefix.prefixes=/prod"
       - "traefik.http.routers.prod-auto.middlewares=prod-auto@docker"
@@ -95,6 +70,17 @@ services:
     privileged: true
     networks:
       - prod-auto-inet
+
+  registry:
+    image: registry:2
+    ports: []
+      # - "5000:5000"
+    labels:
+      # - "traefik.enable=true"
+      - "traefik.http.routers.registry.rule=PathPrefix(`/registry`)"
+      - "traefik.http.middlewares.registry.stripprefix.prefixes=/registry"
+    volumes:
+      - ./data:/var/lib/registry
 
 networks:
   prod-auto-inet:
