@@ -150,7 +150,7 @@ async def github_webhook(request: Request, background_tasks: BackgroundTasks):
         # Verify the signature using the secret
         helpers.verify_signature(request.body(), signature)
 
-        owner = payload["repository"]["owner"]["name"]
+        owner = payload["repository"]["owner"]["login"]
         repo = payload["repository"]["name"]
         
         return deploy_project_logic(owner, repo, background_tasks)
