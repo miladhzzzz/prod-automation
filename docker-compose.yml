@@ -79,7 +79,7 @@ services:
       # - "traefik.enable=true"
       - "traefik.http.routers.registry.rule=PathPrefix(`/registry`)"
       - "traefik.http.middlewares.registry.stripprefix.prefixes=/registry"
-      - "traefik.http.routers.prod-auto.middlewares=registry@docker"
+      - "traefik.http.routers.registry.middlewares=registry@docker"
     volumes:
       - ./registry-images:/var/lib/registry
     networks:
