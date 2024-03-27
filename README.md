@@ -23,12 +23,8 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
   
 * **Continuous Deployment (CD):** Automatically deploy your applications to production or staging environments after successful CI runs, with minimal manual intervention.
   
-* **Docker Containerization:** Harness the power of Docker to package your applications and dependencies into portable containers, guaranteeing consistency across different environments.
-  
 * **Logging and Monitoring:** Gain insights into your pipeline executions and application performance with robust logging and monitoring solutions, enabling proactive issue detection and resolution.
   
-* **Database Integration:** Store project metadata and build information in a SQLite database, providing a centralized repository for tracking and reporting pipeline activity.
-
 ## Get Started
 
 1. **Clone the Repository:** Get started by cloning the Automagic DevOps Pipeline repository to your local machine.
@@ -82,12 +78,10 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
 
 * **Version Control:** we Keep your projects updated using Git version control so you can easily revert breaking changes with a single GET request.
 
-* **Reverse Proxy:** we also use Traefik reverse proxy you can set labels in your docker-compose to expose this services dynamically!.
+* **Reverse Proxy:** we also use Traefik reverse proxy you can set labels in your docker-compose to expose the services dynamically!.
 
 * **Observability** we use Prometheus / Grafana to monitor the traefik entry point we also have a /prometheus config dir you can change it to observe all your containers or other components easily!
   
-* **Enjoy Deployments:** Access your deployed applications in the specified environments, knowing they've been delivered with speed, reliability, and a touch of magic!
-
 ## Join the Journey
 
 Ready to embark on a journey of automation and efficiency? Dive into the Automagic DevOps Pipeline, contribute your ideas, and let's make DevOps a breeze together!
@@ -95,7 +89,3 @@ Ready to embark on a journey of automation and efficiency? Dive into the Automag
 ## License
 
 This project is licensed under the MIT License.
-
-## Acknowledgments
-
-Huge thanks to the FastAPI, uvicorn, and SQLite development teams for their invaluable contributions to this project!
