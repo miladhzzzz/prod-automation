@@ -81,6 +81,8 @@ services:
       - "traefik.http.middlewares.registry.stripprefix.prefixes=/registry"
     volumes:
       - ./data:/var/lib/registry
+    networks:
+      - prod-auto-inet
 
 networks:
   prod-auto-inet:
