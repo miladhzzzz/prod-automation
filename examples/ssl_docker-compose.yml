@@ -1,0 +1,77 @@
+version: '3.9'
+
+services:
+
+# reverse proxy with SSL termination
+
+  reverse-proxy:
+    image: traefik:v2.11
+    command:
+      - "--providers.docker=true"
+      - "--log.level=DEBUG"
+      - "--metrics.prometheus=true"
+      - "--accesslog=true"
+      - "--metrics.prometheus.buckets=0.1,0.3,1.2,5.0"
+      - "--metrics.prometheus.addrouterslabels=true"
+      - "--metrics.prometheus.addServicesLabels=true"
+      - "--metrics.prometheus.addEntryPointsLabels=true"
+      - "--entrypoints.websecure.address=:443"  # Add this line for HTTPS
+      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"  # Enable ACME (Let's Encrypt) for automatic certificate generation
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.myresolver.acme.email=your.email@example.com"  # Your email for Let's Encrypt notifications
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"  # Persistent storage for certificates
+
+    ports:
+      - "443:443"  # Expose HTTPS port
+
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "/path/to/ssl/certs:/ssl"  # Mount SSL certificates
+    networks:
+      - prod-auto-inet
+
+  # monitoring
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    networks:
+      - prod-auto-inet
+
+  prometheus:
+    image: prom/prometheus
+    ports: []
+      # - "9090:9090"
+    volumes:
+      - "./monitoring/prometheus:/etc/prometheus"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    networks:
+      - prod-auto-inet
+
+# our services
+  prod-auto:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    ports: []
+      # - "1111:1111"  # Adjust port if necessary
+    labels:
+      # - "traefik.enable=true"
+      - "traefik.http.routers.prod-auto.rule=PathPrefix(`/prod`)"
+      - "traefik.http.middlewares.prod-auto.stripprefix.prefixes=/prod"
+      - "traefik.http.routers.prod-auto.middlewares=prod-auto@docker"
+
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    privileged: true
+    networks:
+      - prod-auto-inet
+
+networks:
+  prod-auto-inet:
+    driver: bridge
