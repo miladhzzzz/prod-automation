@@ -22,7 +22,7 @@ services:
       # The HTTP port
       - "80:80"
       # The Web UI (enabled by --api.insecure=true)
-      # - "8080:8080"
+      - "8080:8080"
     volumes:
       # So that Traefik can listen to the Docker events
       - "/var/run/docker.sock:/var/run/docker.sock"
@@ -79,8 +79,9 @@ services:
       # - "traefik.enable=true"
       - "traefik.http.routers.registry.rule=PathPrefix(`/registry`)"
       - "traefik.http.middlewares.registry.stripprefix.prefixes=/registry"
+      - "traefik.http.routers.prod-auto.middlewares=registry@docker"
     volumes:
-      - ./data:/var/lib/registry
+      - ./registry-images:/var/lib/registry
     networks:
       - prod-auto-inet
 
