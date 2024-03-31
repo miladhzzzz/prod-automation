@@ -67,19 +67,31 @@ def docker_push_images(registry_url: str = None, project_name: str = None):
         last_three_images = images_list[-3:]
 
         if registry_url is None:
-            registry_url = "http://registry:5000/"
+            registry_url = "http://registry:5000"
 
         if project_name is None:
             for image in last_three_images:
-                subprocess.run(["docker", "push", f"{registry_url}/{image}"], check=True)
-                print(f"Image {image} pushed to {registry_url} successfully.")
+                # Tag the image with the registry URL
+                tagged_image = f"{registry_url}/{image}"
+                subprocess.run(["docker", "tag", image, tagged_image], check=True)
+                
+                # Push the tagged image to the registry
+                subprocess.run(["docker", "push", tagged_image], check=True)
+                
+                print(f"Image {tagged_image} pushed to {registry_url} successfully.")
             return
         
         project_images = [image for image in images_list if project_name.lower() in image]
 
         for image in project_images:
-            subprocess.run(["docker", "push", f"{registry_url}/{image}"], check=True)
-            print(f"Image {image} pushed to {registry_url} successfully.")
+            # Tag the image with the registry URL and project name
+            tagged_image = f"{registry_url}/{project_name.lower()}:{image}"
+            subprocess.run(["docker", "tag", image, tagged_image], check=True)
+            
+            # Push the tagged image to the registry
+            subprocess.run(["docker", "push", tagged_image], check=True)
+            
+            print(f"Image {tagged_image} pushed to {registry_url} successfully.")
         
     except subprocess.CalledProcessError as e:
         print(f"Error pushing images to {registry_url}: {e}")
