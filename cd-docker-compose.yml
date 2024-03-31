@@ -7,7 +7,7 @@ services:
     ports: []
       # - "3000:3000"
     networks:
-      - prod-auto-inet
+      - prod-automation_prod-auto-inet
 
 
 networks:

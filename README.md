@@ -92,7 +92,7 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
               - "/var/run/docker.sock:/var/run/docker.sock"
 
             networks:
-            - prod-auto-inet
+            - prod-automation_prod-auto-inet
 
         networks:
         prod-automation_prod-auto-inet:
