@@ -19,7 +19,7 @@ down:
 
 solo:
 	@echo "Bringing up prod-auto service..."
-	@./init.sh
+	@chmod +x init.sh && ./init.sh
 	@echo "prod-auto service is up."
 
 sync:
@@ -32,4 +32,9 @@ setup:
 	@cd scripts && chmod +x setup-host.sh && ./setup-host.sh
 	@echo "Setup complete! now use make up."
 
-.PHONY: build up down solo sync setup
+cd:
+	@echo "Setting Up Kube-o-Matic continious Delivery integration..."
+	@$(COMPOSE) -f cd-docker-compose.yml up -d
+	@echo "Kube-o-matic Deployed successfully" 
+
+.PHONY: build up down solo sync setup cd
