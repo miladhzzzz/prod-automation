@@ -71,7 +71,7 @@ def docker_push_images(registry_url: str = "registry:5000", project_name: str = 
 
             for image in project_images:
                 # Tag the image with the registry URL and project name
-                tagged_image = f"{registry_url}/{project_name.lower()}:{image}"
+                tagged_image = f"{registry_url}/{image}"
                 subprocess.run(["docker", "tag", image, tagged_image], check=True)
                 
                 # Push the tagged image to the registry
