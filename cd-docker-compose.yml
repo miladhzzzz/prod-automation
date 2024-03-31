@@ -3,7 +3,7 @@ version: '3.9'
 services:
 
   kube-o-matic:
-    image: ghcr.io/miladhzzzz/kube-o-matic:sha256-f8aa0db951b76dd21a0f0f5df087d08d87cd528e0ebb5ea4e9766322e03f4219.sig
+    image: ghcr.io/miladhzzzz/kube-o-matic:main
     ports: []
       # - "3000:3000"
     networks:
