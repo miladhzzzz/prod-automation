@@ -1,5 +1,5 @@
 from typing import Optional, List, Dict
-import subprocess, os
+import subprocess, os, requests
 import log as logs
 
 def read_exposed_ports_from_dockerfile(dockerfile_path: str) -> List[int]:
@@ -60,6 +60,30 @@ def stop_and_remove_container(container_name: str):
     except subprocess.CalledProcessError as e:
         print(f"Error stopping and removing container {container_name} with docker: {e}")
 
+def docker_push_images(registry_url: str = None, project_name: str = None):
+    try:
+        images_output = subprocess.check_output(["docker", "images", "--format", "{{.Repository}}:{{.Tag}}"]).decode("utf-8")
+        images_list = images_output.strip().split("\n")
+        last_three_images = images_list[-3:]
+
+        if registry_url is None:
+            registry_url = "http://registry:5000/"
+
+        if project_name is None:
+            for image in last_three_images:
+                subprocess.run(["docker", "push", f"{registry_url}/{image}"], check=True)
+                print(f"Image {image} pushed to {registry_url} successfully.")
+            return
+        
+        project_images = [image for image in images_list if project_name.lower() in image]
+
+        for image in project_images:
+            subprocess.run(["docker", "push", f"{registry_url}/{image}"], check=True)
+            print(f"Image {image} pushed to {registry_url} successfully.")
+        
+    except subprocess.CalledProcessError as e:
+        print(f"Error pushing images to {registry_url}: {e}")
+
 def deploy_docker_compose(project_name: str, compose_file_path: str, log_file_path: str):
     try:
         # Check if there are existing containers for the project
@@ -72,6 +96,9 @@ def deploy_docker_compose(project_name: str, compose_file_path: str, log_file_pa
         with open(log_file_path, "a") as log:
             subprocess.run(["docker-compose", "-f", compose_file_path, "build"], stdout=log, stderr=subprocess.STDOUT, check=True)
             subprocess.run(["docker-compose", "-f", compose_file_path, "up", "-d"], stdout=log, stderr=subprocess.STDOUT, check=True)
+
+        # push build images to registry
+        docker_push_images(project_name=project_name)
 
         logs.log_build_request(project_name, "success")
         logs.update_project_counts(project_name, True)
@@ -102,6 +129,9 @@ def deploy_docker_run(project_name: str, project_dir: str, log_file_path: str, e
         
         # Run the container
         subprocess.run(run_command)
+
+        # push build images to registry
+        docker_push_images(project_name=project_name)
         
         logs.log_build_request(project_name, "success")
         logs.update_project_counts(project_name, True)  
@@ -110,13 +140,6 @@ def deploy_docker_run(project_name: str, project_dir: str, log_file_path: str, e
         logs.log_build_request(project_name, "failure")
         logs.update_project_counts(project_name, False)
 
-def docker_push_image(image_name: str, registry_url: str):
-    try:
-        subprocess.run(["docker", "push", f"{registry_url}/{image_name}"], check=True)
-        print(f"Image {image_name} pushed to {registry_url} successfully.")
-    except subprocess.CalledProcessError as e:
-        print(f"Error pushing image {image_name} to {registry_url}: {e}")
-   
 def get_container_logs(container_name: str):
     # Attempt to get logs for the exact container name
     container_logs = subprocess.run(["docker", "logs", container_name], capture_output=True, text=True)
