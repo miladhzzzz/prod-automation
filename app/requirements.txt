@@ -2,3 +2,4 @@ pydantic
 fastapi
 uvicorn
 sentry_sdk
+requests
