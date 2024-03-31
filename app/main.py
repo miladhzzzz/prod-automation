@@ -1,4 +1,4 @@
-import os , json, subprocess ,logging , uvicorn, sqlite3, sentry_sdk
+import os , json, subprocess ,logging , uvicorn, sqlite3, sentry_sdk, requests
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Request
 from pydantic import BaseModel
 from typing import Optional, List, Dict
@@ -174,17 +174,21 @@ async def deploy_with_env(
     # Run the container with environment variables using Docker command
     return deploy_project_logic(owner, repo, background_tasks, env_string)
 
-KUBE_CONFIG_PATH = os.path.expanduser("~/.kube/config")
-
 @app.post("/kubectl/config")
 async def kubectl_config(config: str):
+
+    if requests.get("http://kube-o-matic:8555/").status_code is not 200:
+        return {"message": "Continious integration is not Reachable or running make sure you use 'make cd' in your root dir to set this up!"}
+    
+    cd_url = "http://kube-o-matic:8555/"
+
     if helpers.is_valid_kubeconfig(config):
-        if not os.path.exists(KUBE_CONFIG_PATH):
-            with open(KUBE_CONFIG_PATH, "w") as new_kubeconfig_file:
-                new_kubeconfig_file.write(config)
-        else:
-            with open(KUBE_CONFIG_PATH, "a") as kubeconfig_file:
-                kubeconfig_file.write(config)
+
+        payload = {"config": config}
+
+        r =  requests.post(cd_url + "upload", json=payload)
+
+        print(r.status_code)
         
         return {"message": "Kubeconfig content saved successfully."}
     else:
