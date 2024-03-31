@@ -59,14 +59,52 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
         # OR
         make solo
     ```
+
+4. **Kubernetes Integration:** You can integrate <https://github.com/miladhzzzz/kube-o-matic> in your deployment environment to automate CD for kubernetes!
+
+    ```shell
+        make cd
+    ```
+
+    * then send a POST request to /kubectl/config with your kubeconfig file and thats all you need to do!
+
+5. **Utilize Docker Compose:** Use a `docker-compose.yml` in the root of your repository or a Dockerfile to build your project and define services.
+
+    ```yaml
+    # EXAMPLE YAML FILE FOR PROJECT AUTOMATION PIPELINE.
+        version: '3.9'
+
+        services:
+
+           example-service:
+            build:
+              context: .
+              dockerfile: Dockerfile
+
+            ports: []
+            # - "1111:1111"  # Adjust port if necessary
+            labels: # Provide nescesary routing for traefik to pick up and automatically route to your service!
+              - "traefik.enable=true"
+              - "traefik.http.routers.example-service.rule=PathPrefix(`/api`)"
+              - "traefik.http.middlewares.example-service.stripprefix.prefixes=/api"
+              - "traefik.http.routers.example-service.middlewares=example-service@docker"
+            volumes:
+              - "/var/run/docker.sock:/var/run/docker.sock"
+
+            networks:
+            - prod-auto-inet
+
+        networks:
+        prod-automation_prod-auto-inet:
+            external: true
+
+    ```
+
+6. **Track Pipeline Status:** Keep track of the pipeline status in a SQLite database for monitoring and reporting purposes.
   
-4. **Utilize Docker Compose:** Use a `docker-compose.yml` in the root of your repository or a Dockerfile to build your project and define services.
+7. **Set Environment Variables:** Use the API endpoint to set environment variables for projects, ensuring smooth application execution without manual intervention.
   
-5. **Track Pipeline Status:** Keep track of the pipeline status in a SQLite database for monitoring and reporting purposes.
-  
-6. **Set Environment Variables:** Use the API endpoint to set environment variables for projects, ensuring smooth application execution without manual intervention.
-  
-7. **Automate Build Triggers:** Trigger builds automatically when a webhook event is received, with the necessary environment variables pre-configured for seamless deployment.
+8. **Automate Build Triggers:** Trigger builds automatically when a webhook event is received, with the necessary environment variables pre-configured for seamless deployment.
 
 ## Experience the Magic
 
