@@ -24,10 +24,10 @@ solo:
 
 sync:
 	@echo "Syncing code with upstream and restarting services..."
-	@make down
+	@$(COMPOSE) down
 	@git pull
-	@make build
-	@make up
+	@$(COMPOSE) build
+	@$(COMPOSE) up -d
 	@echo "Sync complete."
 
 setup:
