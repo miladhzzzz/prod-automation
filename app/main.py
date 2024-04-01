@@ -31,6 +31,8 @@ class EnvironmentVariables(BaseModel):
     key: str
     value: str
 
+class ConfigPayload(BaseModel):
+    config: str
 # Logic / Global / Background functions
     
 def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTasks , envs:str = None ):
@@ -175,24 +177,32 @@ async def deploy_with_env(
     return deploy_project_logic(owner, repo, background_tasks, env_string)
 
 @app.post("/kubectl/config")
-async def kubectl_config(config: str):
+async def kubectl_config(config_payload: ConfigPayload):
+    try:
+        # Check if continuous integration is reachable
+        if requests.get("http://kube-o-matic:8555/").status_code != 200:
+            raise HTTPException(status_code=503, detail="Continuous integration is not reachable or running. Make sure you use 'make cd' in your root dir to set this up!")
 
-    if requests.get("http://kube-o-matic:8555/").status_code is not 200:
-        return {"message": "Continious integration is not Reachable or running make sure you use 'make cd' in your root dir to set this up!"}
-    
-    cd_url = "http://kube-o-matic:8555/"
+        cd_url = "http://kube-o-matic:8555/"
 
-    if helpers.is_valid_kubeconfig(config):
+        # Validate kubeconfig
+        if not helpers.is_valid_kubeconfig(config_payload.config):
+            raise HTTPException(status_code=422, detail="Invalid kubeconfig content provided.")
 
-        payload = {"config": config}
+        # Send kubeconfig to the upload endpoint
+        payload = {"config": config_payload.config}
+        r = requests.post(cd_url + "upload", json=payload)
 
-        r =  requests.post(cd_url + "upload", json=payload)
+        # Check if the request was successful
+        r.raise_for_status()
 
-        print(r.status_code)
-        
         return {"message": "Kubeconfig content saved successfully."}
-    else:
-        return {"error": "Invalid kubeconfig content provided."}
+
+    except requests.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Error occurred while communicating with the server: {str(e)}")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
     
 # TODO : needs fixing
 @app.post("/set_env/{project_name}")
