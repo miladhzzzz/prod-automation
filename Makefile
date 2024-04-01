@@ -23,8 +23,11 @@ solo:
 	@echo "prod-auto service is up."
 
 sync:
-	@echo "Syncing code with upstream..."
+	@echo "Syncing code with upstream and restarting services..."
+	@make down
 	@git pull
+	@make build
+	@make up
 	@echo "Sync complete."
 
 setup:
