@@ -176,7 +176,6 @@ async def deploy_with_env(
     # Run the container with environment variables using Docker command
     return deploy_project_logic(owner, repo, background_tasks, env_string)
 
-# TODO: we need to fix and upload kubeconfig as a file
 @app.post("/kubectl/config")
 async def kubectl_config(config_payload: ConfigPayload):
     try:
@@ -190,9 +189,11 @@ async def kubectl_config(config_payload: ConfigPayload):
         if not helpers.is_valid_kubeconfig(config_payload.config):
             raise HTTPException(status_code=422, detail="Invalid kubeconfig content provided.")
 
-        # Send kubeconfig to the upload endpoint
-        payload = {"config": config_payload.config}
-        r = requests.post(cd_url + "upload", json=payload)
+        # Prepare file data
+        files = {"file": ("kubeconfig", config_payload.config.encode(), "application/octet-stream")}
+
+        # Send kubeconfig as file
+        r = requests.post(cd_url + "upload", files=files)
 
         # Check if the request was successful
         r.raise_for_status()
