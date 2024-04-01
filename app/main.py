@@ -176,6 +176,7 @@ async def deploy_with_env(
     # Run the container with environment variables using Docker command
     return deploy_project_logic(owner, repo, background_tasks, env_string)
 
+# TODO: we need to fix and upload kubeconfig as a file
 @app.post("/kubectl/config")
 async def kubectl_config(config_payload: ConfigPayload):
     try:
@@ -204,7 +205,7 @@ async def kubectl_config(config_payload: ConfigPayload):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
     
-# TODO : needs fixing
+# TODO : needs encryption implementation as well as a retrieval function
 @app.post("/set_env/{project_name}")
 async def set_environment_variables(project_name: str, variables: dict):
     try:
