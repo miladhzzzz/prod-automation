@@ -36,47 +36,51 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
 2. **Run Setup Script:** Execute the Makefile or init.sh script provided in the repository to automate the setup and initialization process.
 
     ```shell
-        # Setting up the host if its freshly installed skip this whole section if you have docker / docker-compose / git installed!!
-        make setup
+    # Setting up the host if its freshly installed skip this whole section if you have docker / docker-compose / git installed!!
+    make setup
 
-        # or you can manually execute the setup-host.sh
-        cd scripts
-        chmod +x setup-host.sh
-        ./setup-host.sh
+    # or you can manually execute the setup-host.sh
+    cd scripts
+    chmod +x setup-host.sh
+    ./setup-host.sh
     ```
   
 3. **Deploy System Components:** Deploy the entire system, including Traefik reverse proxy, Grafana, Prometheus for observability, and the production automation container.
 
     ```shell
-        # make up will build and run every component we need
-        make up
-
-        # you can alternatively run the production automation in stand alone mode with init.sh!
-        # this will only run the python API application for development!
-        chmod +x init.sh
-        ./init.sh
-
-        # OR
-        make solo
+    # make keygen will generate a AES 256 CBC key for keeping your secrects safe in vault!
+    make keygen
+    # make up will bring the project up using docker-compose
+    make up
     ```
 
-4. **Kubernetes Integration:** You can integrate <https://github.com/miladhzzzz/kube-o-matic> in your deployment environment to automate CD for kubernetes!
+4. **Set Github Webhook Secret:** set the github secret with the script just like below:
 
     ```shell
-        make cd
+    cd scripts
+    chmod +x set-env.sh
+    ./set-env.sh GITHUB_WEBHOOK_SECRET <YOUR_SECRET_HERE>
     ```
 
-    * then send a POST request to /kubectl/config with your kubeconfig file and thats all you need to do!
+5. **Kubernetes Integration:** You can integrate <https://github.com/miladhzzzz/kube-o-matic> in your deployment environment to automate CD for kubernetes!
 
-5. **Utilize Docker Compose:** Use a `docker-compose.yml` in the root of your repository or a Dockerfile to build your project and define services.
+    ```shell
+    make cd
+    ```
+
+    * then send a POST request to /kubeconfig with your kubeconfig file and thats all you need to do!
+
+6. **Utilize Docker Compose:** Use a `docker-compose.yml` in the root of your repository or a Dockerfile to build your project and define services.
+
+    * our pipeline also looks for a Dockerfile if no docker-compose.yml file was present!
+    * make sure you have either a docker-compose.yml as shown below or a Dockerfile present in the ROOT_DIR of your project!
 
     ```yaml
     # EXAMPLE YAML FILE FOR PROJECT AUTOMATION PIPELINE.
-        version: '3.9'
+    version: '3.9'
 
-        services:
-
-           example-service:
+    services:
+        example-service:
             build:
               context: .
               dockerfile: Dockerfile
@@ -90,22 +94,37 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
               - "traefik.http.routers.example-service.middlewares=example-service@docker"
             volumes:
               - "/var/run/docker.sock:/var/run/docker.sock"
-
+            # use environment to read secrets from your vault 
+            environment:
+            - DATABASE_URL: $DARABASE_URL
             networks:
             - prod-automation_prod-auto-inet
 
-        networks:
-        prod-automation_prod-auto-inet:
-            external: true
+    networks:
+    prod-automation_prod-auto-inet:
+        external: true
 
     ```
 
-6. **Track Pipeline Status:** Keep track of the pipeline status in a SQLite database for monitoring and reporting purposes.
-  
-7. **Set Environment Variables:** Use the API endpoint to set environment variables for projects, ensuring smooth application execution without manual intervention.
-  
+7. **Set Environment Variables:** Use the API endpoint /vault/{project_name} to set environment variables for projects, ensuring smooth application execution without manual intervention.
+
+    * Send this as a json payload to the endpoint above to set your vault secrets.
+
+    ```json
+    {
+    "DATABASE_URL": "postgresql://user:password@localhost/dbname",
+    "API_KEY": "abc123", 
+    }
+    ```
+
 8. **Automate Build Triggers:** Trigger builds automatically when a webhook event is received, with the necessary environment variables pre-configured for seamless deployment.
 
+   * Go to your github repository > settings > webhook and point the webhook to http(s)://<YOUR-DNS/PUBLIC-IP/webhook>.
+   * Set your webhook secret.
+   * make sure you use application/json.
+
+9. **Track Pipeline Status:** Keep track of the pipeline status in /status/{project_name} for monitoring and reporting purposes.
+  
 ## Experience the Magic
 
 * **Push Code Changes:** Simply push your code changes to your GitHub repository.
