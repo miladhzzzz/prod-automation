@@ -3,6 +3,7 @@ from fastapi import FastAPI, BackgroundTasks, HTTPException, Request
 from pydantic import BaseModel
 from typing import Optional, List, Dict
 from db import ConnectionPool
+from encrypt import Encryptor
 import dockr , log , helpers
 
 sentry_sdk.init(
@@ -11,6 +12,9 @@ sentry_sdk.init(
     profiles_sample_rate=1.0,
     enable_tracing=True
 )
+
+# initilize cryptography
+crypt = Encryptor()
 
 # initialize FastAPI
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url= None)
@@ -35,13 +39,14 @@ class ConfigPayload(BaseModel):
     config: str
 # Logic / Global / Background functions
     
-def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTasks , envs:str = None ):
+def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTasks):
     project_name = repo
     log_file = f"{project_name}.log"
     repo_url = f"https://github.com/{owner}/{repo}.git"
     project_dir = os.path.abspath(os.path.join("projects", project_name))
     log_dir = os.path.abspath(os.path.join(LOGS_DIR, project_name))
     log_file_path = os.path.join(log_dir, log_file)
+    project_envs = helpers.get_vault_secrets(project_name, connection_pool, crypt)
 
     try:
         # Check if project already exists locally
@@ -57,6 +62,11 @@ def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTask
         # Check if Docker Compose file exists
         compose_file_path = os.path.join(project_dir, "docker-compose.yml")
         if compose_file_path and os.path.exists(compose_file_path):
+
+            # check if the project has any ENV variables and set them before deployment
+            if project_envs:
+                background_tasks.add_task(helpers.set_project_env, project_envs)
+
             # Use docker-compose to deploy the project
             background_tasks.add_task(dockr.deploy_docker_compose, project_name, compose_file_path, log_file_path)
         else:
@@ -64,8 +74,14 @@ def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTask
             dockerfile_path = os.path.join(project_dir, "Dockerfile")
             exposed_ports = dockr.read_exposed_ports_from_dockerfile(dockerfile_path)
 
+            if project_envs:
+                # convert the dictionary to a string
+                envs_str = ' '.join([f'{key}={value}' for key, value in project_envs.items()])
+            else :
+                envs_str = ""
+
             # Execute deployment using Dockerfile
-            background_tasks.add_task(dockr.deploy_docker_run, project_name, project_dir, log_file_path, exposed_ports, envs)
+            background_tasks.add_task(dockr.deploy_docker_run, project_name, project_dir, log_file_path, exposed_ports, envs_str)
         
         # Provide immediate response to the user
         return {"message": f"Deployment started for {project_name}. Check status at /status/{project_name}"}
@@ -163,19 +179,6 @@ async def github_webhook(request: Request, background_tasks: BackgroundTasks):
 async def deploy_project(owner: str, repo: str, background_tasks: BackgroundTasks):
     return deploy_project_logic(owner, repo, background_tasks)
 
-@app.post("/deploy")
-async def deploy_with_env(
-    owner: str,
-    repo: str,
-    env_vars: List[EnvironmentVariables],
-    background_tasks: BackgroundTasks
-):
-    # Build environment variables string in format "key1=value1 key2=value2 ..."
-    env_string = " ".join([f"{var.key}={var.value}" for var in env_vars])
-
-    # Run the container with environment variables using Docker command
-    return deploy_project_logic(owner, repo, background_tasks, env_string)
-
 @app.post("/kubectl/config")
 async def kubectl_config(config_payload: ConfigPayload):
     try:
@@ -206,20 +209,32 @@ async def kubectl_config(config_payload: ConfigPayload):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
     
-# TODO : needs encryption implementation as well as a retrieval function
-@app.post("/set_env/{project_name}")
-async def set_environment_variables(project_name: str, variables: dict):
+@app.post("/vault/{project_name}")
+async def set_environment_variables(project_name: str, request: Request):
+    variables = await request.json()
+    
     try:
         # Encrypt and store each environment variable in the database
         with connection_pool.get_connection() as conn:
             cursor = conn.cursor()
             for key, value in variables.items():
-                encrypted_value = "encrypt_data(value)"
+                encrypted_value = crypt.en(value)
+                
+                # Try to update the existing variable
                 cursor.execute(
-                    "INSERT OR REPLACE INTO project_environment_variables (project_name, variable_name, variable_value) VALUES (?, ?, ?)",
-                    (project_name, key, encrypted_value)
+                    "UPDATE project_environment_variables SET variable_value = ? WHERE project_name = ? AND variable_name = ?",
+                    (encrypted_value, project_name, key)
                 )
+                
+                # If no rows were affected by the update, insert a new record
+                if cursor.rowcount == 0:
+                    cursor.execute(
+                        "INSERT INTO project_environment_variables (project_name, variable_name, variable_value) VALUES (?, ?, ?)",
+                        (project_name, key, encrypted_value)
+                    )
+                    
             conn.commit()
+            
     except sqlite3.Error as e:
         raise HTTPException(status_code=500, detail=f"Error setting environment variables: {e}")
     
