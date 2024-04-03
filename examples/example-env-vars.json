@@ -1,8 +1,0 @@
-{
-    "project_name": "example_project",
-    "variables": {
-        "DATABASE_URL": "postgresql://user:password@localhost/dbname",
-        "API_KEY": "abc123",
-        "DEBUG_MODE": "true"
-    }
-}
