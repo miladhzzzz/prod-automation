@@ -179,7 +179,7 @@ async def github_webhook(request: Request, background_tasks: BackgroundTasks):
 async def deploy_project(owner: str, repo: str, background_tasks: BackgroundTasks):
     return deploy_project_logic(owner, repo, background_tasks)
 
-@app.post("/kubectl/config")
+@app.post("/kubeconfig")
 async def kubectl_config(config_payload: ConfigPayload):
     try:
         # Check if continuous integration is reachable
@@ -210,7 +210,7 @@ async def kubectl_config(config_payload: ConfigPayload):
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
     
 @app.post("/vault/{project_name}")
-async def set_environment_variables(project_name: str, request: Request):
+async def set_vault_secrets(project_name: str, request: Request):
     variables = await request.json()
     
     try:
@@ -268,15 +268,38 @@ async def revert_changes(
     # Return response indicating success or failure
     return {"message": f"Reverted changes for project {repo} with {revert_type} revert. Rebuilding..."}
 
-@app.get("/stop/{project_name}")
-async def stop_and_remove_containers(project_name: str):
-    # Stop and remove containers associated with the project name
-    try:
-        # Run the function to stop and remove containers
-        dockr.stop_and_remove_container(project_name)
-        return {"message": f"Containers for project {project_name} stopped and removed successfully."}
-    except Exception as e:
-        return {"message": f"Failed to stop and remove containers for project {project_name}. Error: {str(e)}"}, 500
+@app.get("/docker/{action}/{project_name}")
+async def container_management(project_name: str, action:str):
+# Stop and remove containers associated with the project name
+    if action == "stop":
+        try:
+            dockr.stop_and_remove_container(project_name)
+            return {"message": f"Containers for project {project_name} stopped and removed successfully."}
+        
+        except Exception as e:
+            return {"message": f"Failed to stop and remove containers for project {project_name}. Error: {str(e)}"}, 500
+        
+    elif action == "restart":
+        try:
+            dockr.docker_restart_container(project_name)
+            return {"message": f"Containers for project {project_name} restarted successfully."}
+        
+        except Exception as e:
+            return {"message": f"Failed to restart containers for project {project_name}. Error: {str(e)}"}, 500
+        
+    elif action == "log":
+        try:
+            logs =  dockr.docker_restart_container(project_name)
+            if logs:
+                return {"message": f"Containers logs: {logs}."}
+            else:
+                return {"message": f"No Container Logs found for {project_name}"}
+        
+        except Exception as e:
+            return {"message": f"Failed to restart containers for project {project_name}. Error: {str(e)}"}, 500
+        
+    else:
+        return {"message": "use approporiate Actions : stop , restart , log"}
 
 if __name__ == "__main__":
     helpers.first_time_database_init(connection_pool)
