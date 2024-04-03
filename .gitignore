@@ -4,3 +4,4 @@ build_logs
 __pycache__
 dev/**
 .vscode
+key.key
