@@ -12,6 +12,11 @@ up:
 	@$(COMPOSE) up -d
 	@echo "Services are up and running."
 
+keygen:
+	@echo "Generating AES 128-CBC Keys if they dont exist..."
+	@python3 keygen.py
+	@echo "Encryption Keys generated."
+
 down:
 	@echo "Shutting down services..."
 	@$(COMPOSE) down
@@ -24,10 +29,7 @@ solo:
 
 sync:
 	@echo "Syncing code with upstream and restarting services..."
-	@$(COMPOSE) down
 	@git pull
-	@$(COMPOSE) build
-	@$(COMPOSE) up -d
 	@echo "Sync complete."
 
 setup:
@@ -40,4 +42,4 @@ cd:
 	@$(COMPOSE) -f cd-docker-compose.yml up -d
 	@echo "Kube-o-matic Deployed successfully" 
 
-.PHONY: build up down solo sync setup cd
+.PHONY: build up down solo sync setup cd keygen
