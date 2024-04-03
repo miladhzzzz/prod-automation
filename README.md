@@ -30,7 +30,7 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
 1. **Clone the Repository:** Get started by cloning the Automagic DevOps Pipeline repository to your local machine.
 
     ```shell
-        git clone https://github.com/miladhzzzz/prod-automation
+    git clone https://github.com/miladhzzzz/prod-automation
     ```
 
 2. **Run Setup Script:** Execute the Makefile or init.sh script provided in the repository to automate the setup and initialization process.
@@ -72,8 +72,7 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
 
 6. **Utilize Docker Compose:** Use a `docker-compose.yml` in the root of your repository or a Dockerfile to build your project and define services.
 
-    * our pipeline also looks for a Dockerfile if no docker-compose.yml file was present!
-    * make sure you have either a docker-compose.yml as shown below or a Dockerfile present in the ROOT_DIR of your project!
+    * Make sure you have either a docker-compose.yml as shown below or a Dockerfile present in the ROOT_DIR of your project!
 
     ```yaml
     # EXAMPLE YAML FILE FOR PROJECT AUTOMATION PIPELINE.
@@ -112,8 +111,8 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
 
     ```json
     {
-    "DATABASE_URL": "postgresql://user:password@localhost/dbname",
-    "API_KEY": "abc123", 
+        "DATABASE_URL": "postgresql://user:password@localhost/dbname",
+        "API_KEY": "abc123", 
     }
     ```
 
@@ -121,7 +120,7 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
 
    * Go to your github repository > settings > webhook and point the webhook to http(s)://<YOUR-DNS/PUBLIC-IP/webhook>.
    * Set your webhook secret.
-   * make sure you use application/json.
+   * Make sure you use application/json.
 
 9. **Track Pipeline Status:** Keep track of the pipeline status in /status/{project_name} for monitoring and reporting purposes.
   
