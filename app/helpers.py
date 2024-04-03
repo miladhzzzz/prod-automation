@@ -4,6 +4,36 @@ from fastapi import HTTPException
 
 GITHUB_WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET")
 
+def set_project_env(envs):
+
+    for key, value in envs.items():
+        os.environ[key] = value
+        print(f"set key as : {key}")
+    
+def get_vault_secrets(project_name: str, connection_pool, crypt):
+    env_variables = {}
+
+    try:
+        with connection_pool.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT variable_name, variable_value FROM project_environment_variables WHERE project_name = ?",
+                (project_name,)
+            )
+            rows = cursor.fetchall()
+
+            for row in rows:
+                variable_name = row[0]
+                encrypted_value = row[1]
+                decrypted_value = crypt.de(encrypted_value)  # Decrypt the value
+                env_variables[variable_name] = decrypted_value
+
+    except sqlite3.Error as e:
+        # Handle the error as needed
+        print(f"Error retrieving environment variables: {e}")
+
+    return env_variables
+
 def get_container_ip():
 
     # Get the container's hostname
@@ -36,8 +66,9 @@ def first_time_database_init(connection_pool):
             
             cur.execute('''CREATE TABLE IF NOT EXISTS project_environment_variables (
                             id INTEGER PRIMARY KEY,
-                            project_name TEXT UNIQUE,
-                            environment_variables TEXT)''')
+                            project_name TEXT,
+                            variable_name TEXT,
+                            variable_value TEXT)''')
             conn.commit()
 
     except sqlite3.Error as e:
