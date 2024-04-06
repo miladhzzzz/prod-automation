@@ -39,7 +39,7 @@ class ConfigPayload(BaseModel):
     config: str
 # Logic / Global / Background functions
     
-def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTasks, webhook: bool = False, revert: bool = False, commit_hash:str = ""):
+def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTasks, webhook = False, revert: bool = False, commit_hash:str = ""):
     project_name = repo
     log_file = f"{project_name}.log"
     repo_url = f"https://github.com/{owner}/{repo}.git"
