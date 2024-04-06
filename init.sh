@@ -55,7 +55,7 @@ if ! make up; then
 fi
 
 # Step 7: Execute env-set.sh with GitHub webhook secret
-if ! ./scripts/env-set.sh "GITHUB_WEBHOOK_SECRET" "$1"; then
+if ! ./scripts/env-set.sh GITHUB_WEBHOOK_SECRET "$1"; then
     handle_error "Failed to execute env-set.sh"
 fi
 
