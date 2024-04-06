@@ -60,7 +60,6 @@ def stop_and_remove_container(container_name: str):
     except subprocess.CalledProcessError as e:
         print(f"Error stopping and removing container {container_name} with docker: {e}")
 
-# TODO: need to fix the dynamic image registry url in push command
 def docker_push_images(registry_url: str = "registry:5000", project_name: str = None):
     try:
         images_output = subprocess.check_output(["docker", "images", "--format", "{{.Repository}}:{{.Tag}}"]).decode("utf-8")
@@ -89,7 +88,6 @@ def docker_push_images(registry_url: str = "registry:5000", project_name: str = 
                 subprocess.run(["docker", "push", tagged_image], check=True)
                 print(f"Image {tagged_image} pushed to {registry_url} successfully.")
 
-        
     except subprocess.CalledProcessError as e:
         print(f"Error pushing images to {registry_url}: {e}")
 
@@ -107,7 +105,10 @@ def deploy_docker_compose(project_name: str, compose_file_path: str, log_file_pa
             subprocess.run(["docker-compose", "-f", compose_file_path, "up", "-d"], stdout=log, stderr=subprocess.STDOUT, check=True)
 
         # push build images to registry
-        # docker_push_images(project_name=project_name)
+        try:
+            docker_push_images(project_name=project_name)
+        except:
+            pass
 
         logs.log_build_request(project_name, "success", webhook, commit_hash)
         logs.update_project_counts(project_name, True)
@@ -140,7 +141,10 @@ def deploy_docker_run(project_name: str, project_dir: str, log_file_path: str, e
         subprocess.run(run_command)
 
         # push build images to registry
-        # docker_push_images(project_name=project_name)
+        try:
+            docker_push_images(project_name=project_name)
+        except:
+            pass
         
         logs.log_build_request(project_name, "success", webhook, commit_hash)
         logs.update_project_counts(project_name, True)  
