@@ -39,7 +39,7 @@ class ConfigPayload(BaseModel):
     config: str
 # Logic / Global / Background functions
     
-def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTasks, webhook: bool = False, commit_hash:str = ""):
+def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTasks, webhook: bool = False, revert: bool = False, commit_hash:str = ""):
     project_name = repo
     log_file = f"{project_name}.log"
     repo_url = f"https://github.com/{owner}/{repo}.git"
@@ -51,7 +51,9 @@ def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTask
     try:
         # Check if project already exists locally
         if os.path.exists(project_dir):
-            subprocess.run(["git", "pull"], cwd=project_dir, check=True)
+            if not revert:
+                subprocess.run(["git", "pull"], cwd=project_dir, check=True)
+                # If revert is True, Do Nothing!
         else:
             # Clone the repository if it doesn't exist
             subprocess.run(["git", "clone", repo_url, project_dir], check=True)
@@ -210,33 +212,22 @@ async def set_vault_secrets(project_name: str, request: Request):
     
     return {"message": "Environment variables set successfully"}
 
-@app.get("/revert/{owner}/{repo}/{revert_type}")
+@app.get("/revert/{owner}/{repo}")
 async def revert_changes(
     owner: str ,
     repo: str ,
-    revert_type: str ,
     background_tasks: BackgroundTasks
 ):
-    if revert_type not in ["soft", "hard"]:
-        return {"message": "Invalid revert type. Use 'soft' or 'hard'."}, 400
-    
-    # Logic to determine which type of revert to perform
-    if revert_type == "soft":
-        # Perform soft revert
-        subprocess.run(["git", "revert", "--soft", "HEAD~1"], cwd=f"projects/{repo}", check=True)
-    else:
-        # Perform hard revert
-        subprocess.run(["git", "revert", "--hard", "HEAD~1"], cwd=f"projects/{repo}", check=True)
+    try:
+        subprocess.run(["git", "reset", "--hard", "HEAD^"], cwd=f"projects/{repo}", check=True)
+    except Exception as e:
+            return {"message": f"Failed to git reset {repo}. Error: {str(e)}"}, 500
 
     # Call deploy_project_logic to rebuild the project
-    background_tasks.add_task(
-        deploy_project_logic,
-        owner,
-        repo
-    )
+    background_tasks.add_task(deploy_project_logic, owner, repo ,background_tasks, revert=True)
     
     # Return response indicating success or failure
-    return {"message": f"Reverted changes for project {repo} with {revert_type} revert. Rebuilding..."}
+    return {"message": f"Reverted changes for project {repo}. Rebuilding..."}
 
 @app.get("/docker/{action}/{project_name}")
 async def container_management(project_name: str, action:str):
