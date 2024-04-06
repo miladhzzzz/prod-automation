@@ -22,11 +22,6 @@ down:
 	@$(COMPOSE) down
 	@echo "Services are down."
 
-solo:
-	@echo "Bringing up prod-auto service..."
-	@chmod +x init.sh && ./init.sh
-	@echo "prod-auto service is up."
-
 sync:
 	@echo "Syncing code with upstream and restarting services..."
 	@git pull
@@ -42,4 +37,4 @@ cd:
 	@$(COMPOSE) -f cd-docker-compose.yml up -d
 	@echo "Kube-o-matic Deployed successfully" 
 
-.PHONY: build up down solo sync setup cd keygen
+.PHONY: build up down sync setup cd keygen
