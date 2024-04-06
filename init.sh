@@ -13,7 +13,7 @@ handle_error() {
 
 # Set execute permissions for scripts
 chmod +x ./scripts/setup-host.sh
-chmod +x ./scripts/env_set.sh
+chmod +x ./scripts/env-set.sh
 chmod +x ./scripts/hosts-registry.sh
 
 # Check if Docker, Docker Compose, and Git are installed
@@ -49,9 +49,9 @@ if ! make up; then
     handle_error "Failed to deploy project components"
 fi
 
-# Step 6: Execute env_set.sh with GitHub webhook secret
-if ! ./scripts/env_set.sh "GITHUB_WEBHOOK_SECRET" "$1"; then
-    handle_error "Failed to execute env_set.sh"
+# Step 6: Execute env-set.sh with GitHub webhook secret
+if ! ./scripts/env-set.sh "GITHUB_WEBHOOK_SECRET" "$1"; then
+    handle_error "Failed to execute env-set.sh"
 fi
 
 # Step 7: Execute hosts-registry.sh with arguments insecure_registry and update_hosts
