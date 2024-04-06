@@ -11,6 +11,11 @@ handle_error() {
     exit 1
 }
 
+# Check if project containers are running and issue make down command
+if docker ps | grep -q "prod-automation_prod-auto_1"; then
+    make down
+fi
+
 # Set execute permissions for scripts
 chmod +x ./scripts/setup-host.sh
 chmod +x ./scripts/env-set.sh
@@ -64,5 +69,8 @@ if ! ./scripts/hosts-registry.sh update_hosts; then
     handle_error "Failed to execute hosts-registry.sh with update_hosts"
 fi
 
-# Step 8: Setup cronjob for Docker image prune
-(crontab -l ; echo "0 0 * * * docker image prune -a -f") | crontab -
+# Check if cronjob exists
+if ! crontab -l | grep -q "docker image prune"; then
+    # Setup cronjob for Docker image prune
+    (crontab -l ; echo "0 0 * * * docker image prune -a -f") | crontab -
+fi
