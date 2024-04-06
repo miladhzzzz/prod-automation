@@ -67,7 +67,7 @@ def docker_push_images(registry_url: str = "registry:5000", project_name: str = 
         last_three_images = images_list[-3:]
         
         if project_name is not None:
-            project_images = [image for image in images_list if project_name.lower() in image]
+            project_images = [image for image in images_list if project_name.lower() in image and not image.startswith(f"{registry_url}/")]
 
             for image in project_images:
                 # Tag the image with the registry URL and project name
@@ -80,13 +80,14 @@ def docker_push_images(registry_url: str = "registry:5000", project_name: str = 
                 print(f"Image {tagged_image} pushed to {registry_url} successfully.")
         else:
             for image in last_three_images:
-                # Tag the image with the registry URL
-                tagged_image = f"{registry_url}/{image}"
-                subprocess.run(["docker", "tag", image, tagged_image], check=True)
+                if not image.startswith(f"{registry_url}/"):
+                    # Tag the image with the registry URL
+                    tagged_image = f"{registry_url}/{image}"
+                    subprocess.run(["docker", "tag", image, tagged_image], check=True)
 
-                # Push the tagged image to the registry
-                subprocess.run(["docker", "push", tagged_image], check=True)
-                print(f"Image {tagged_image} pushed to {registry_url} successfully.")
+                    # Push the tagged image to the registry
+                    subprocess.run(["docker", "push", tagged_image], check=True)
+                    print(f"Image {tagged_image} pushed to {registry_url} successfully.")
 
     except subprocess.CalledProcessError as e:
         print(f"Error pushing images to {registry_url}: {e}")
