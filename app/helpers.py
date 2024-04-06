@@ -61,7 +61,7 @@ def first_time_database_init(connection_pool):
                             (id INTEGER PRIMARY KEY, name TEXT UNIQUE, success_count INTEGER DEFAULT 0, failure_count INTEGER DEFAULT 0)''')
 
             cur.execute('''CREATE TABLE IF NOT EXISTS jobs 
-                            (id TEXT PRIMARY KEY, project_id INTEGER, status TEXT, log_file TEXT,
+                            (id TEXT PRIMARY KEY, project_id INTEGER, status TEXT, commit_hash TEXT, trigger TEXT, log_file TEXT,
                             FOREIGN KEY(project_id) REFERENCES projects(id))''')
             
             cur.execute('''CREATE TABLE IF NOT EXISTS project_environment_variables (
