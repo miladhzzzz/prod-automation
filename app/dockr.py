@@ -149,23 +149,22 @@ def deploy_docker_run(project_name: str, project_dir: str, log_file_path: str, e
         logs.log_build_request(project_name, "failure", webhook, commit_hash)
         logs.update_project_counts(project_name, False)
 
-# TODO: return a Dict[container_name , container_logs]
-def get_container_logs(container_name: str):
-    # Attempt to get logs for the exact container name
-    container_logs = subprocess.run(["docker", "logs", container_name], capture_output=True, text=True)
+def get_container_logs(container_name: str) -> Dict[str, str]:
+    container_logs = {}
+
+    logs_result = subprocess.run(["docker", "logs", container_name], capture_output=True, text=True)
     
-    if container_logs.returncode == 0:
-        return container_logs.stdout
+    if logs_result.returncode == 0:
+        container_logs[container_name] = logs_result.stdout
     else:
-        # If logs retrieval fails, try to find logs for a container with the repository name as a part of the container name
         all_container_names = subprocess.run(["docker", "ps", "--format", "{{.Names}}"], capture_output=True, text=True)
         for name in all_container_names.stdout.splitlines():
             if container_name in name:
-                container_logs = subprocess.run(["docker", "logs", name], capture_output=True, text=True)
-                if container_logs.returncode == 0:
-                    return container_logs.stdout
+                logs_result = subprocess.run(["docker", "logs", name], capture_output=True, text=True)
+                if logs_result.returncode == 0:
+                    container_logs[name] = logs_result.stdout
 
-    return "Logs not found for the specified container name."
+    return container_logs
 
 def get_project_containers(project_name: str) -> List[Dict[str, str]]:
     container_info = []
