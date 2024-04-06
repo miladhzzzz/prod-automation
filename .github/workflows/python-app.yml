@@ -29,8 +29,7 @@ jobs:
         pip install flake8 pytest
         pip install httpx
         pip install cryptography
-        pip install -r app/requirements.txt
-        echo "B8owwUjoNbchGBfTiQe50KabHhs63TA-Gv_wpUTEtnM=" > app/key.key    
+        pip install -r app/requirements.txt    
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
@@ -39,4 +38,5 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
+        echo "B8owwUjoNbchGBfTiQe50KabHhs63TA-Gv_wpUTEtnM=" > /app/key.key
         pytest
