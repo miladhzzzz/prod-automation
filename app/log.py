@@ -86,7 +86,7 @@ def get_jobs():
             jobs = []
             for row in cur.fetchall():
                 # Get container data associated with the project name
-                container_data = dockr.get_project_containers(row[3])
+                container_data = dockr.get_project_containers(row[5])
 
                 job = {
                     "id": row[0],
