@@ -35,11 +35,19 @@ get_container_ip() {
 
 # Function to update /etc/hosts with container IP address
 update_hosts_file() {
-    echo "$container_ip registry" >> /etc/hosts || {
-        echo "Failed to update /etc/hosts"
-        exit 1
-    }
-    echo "Container IP address added to /etc/hosts: $container_ip registry"
+    if grep -q "registry" /etc/hosts; then
+        sed -i "/registry/s/.*/$container_ip registry/" /etc/hosts || {
+            echo "Failed to update /etc/hosts"
+            exit 1
+        }
+        echo "Container IP address updated in /etc/hosts: $container_ip registry"
+    else
+        echo "$container_ip registry" >> /etc/hosts || {
+            echo "Failed to update /etc/hosts"
+            exit 1
+        }
+        echo "Container IP address added to /etc/hosts: $container_ip registry"
+    fi
 }
 
 # Main script
@@ -52,4 +60,3 @@ else
     echo "Usage: $0 [insecure_registry|update_hosts]"
     exit 1
 fi
-
