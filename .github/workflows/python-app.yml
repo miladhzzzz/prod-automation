@@ -38,5 +38,5 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        echo "B8owwUjoNbchGBfTiQe50KabHhs63TA-Gv_wpUTEtnM=" > /app/key.key
+        echo "B8owwUjoNbchGBfTiQe50KabHhs63TA-Gv_wpUTEtnM=" > key.key
         pytest
