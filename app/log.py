@@ -105,11 +105,14 @@ def get_jobs():
                 if row[1] == "failed" and container_data:
                     for container in container_data:
                         if container.get("status") == "exited":
-                            container_logs = dockr.get_container_logs(row[5])
-                            job["container_name"] = container.get("name")
-                            job["container_status"] = container.get("status")
-                            job["container_logs"] = container_logs
-
+                            container_logs_dict = dockr.get_container_logs(row[5])
+                            if container_logs_dict:
+                                for container_name, container_logs in container_logs_dict.items():
+                                    job = {
+                                        "container_name": container_name,
+                                        "container_status": container.get("status"),
+                                        "container_logs": container_logs
+                                    }
                 jobs.append(job)
             return jobs
         
