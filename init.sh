@@ -44,21 +44,22 @@ if ! make keygen; then
     handle_error "Failed to build the secret key"
 fi
 
-# Step 5: Deploy project components
-if ! make up; then
-    handle_error "Failed to deploy project components"
-fi
-
-# Step 6: Execute env-set.sh with GitHub webhook secret
-if ! ./scripts/env-set.sh "GITHUB_WEBHOOK_SECRET" "$1"; then
-    handle_error "Failed to execute env-set.sh"
-fi
-
-# Step 7: Execute hosts-registry.sh with arguments insecure_registry and update_hosts
+# Step 5: Execute hosts-registry.sh
 if ! ./scripts/hosts-registry.sh insecure_registry; then
     handle_error "Failed to execute hosts-registry.sh with insecure_registry"
 fi
 
+# Step 6: Deploy project components
+if ! make up; then
+    handle_error "Failed to deploy project components"
+fi
+
+# Step 7: Execute env-set.sh with GitHub webhook secret
+if ! ./scripts/env-set.sh "GITHUB_WEBHOOK_SECRET" "$1"; then
+    handle_error "Failed to execute env-set.sh"
+fi
+
+# step 8: Update host /etc/hosts file with new container ip
 if ! ./scripts/hosts-registry.sh update_hosts; then
     handle_error "Failed to execute hosts-registry.sh with update_hosts"
 fi
