@@ -11,6 +11,7 @@ configure_insecure_registry() {
             echo "Failed to setup insecure registry"
             exit 1
         }
+        restart_docker_service
         echo "Added Insecure registry to docker..."
     fi
 }
@@ -52,4 +53,3 @@ else
     exit 1
 fi
 
-restart_docker_service
