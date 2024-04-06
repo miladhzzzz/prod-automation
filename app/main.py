@@ -259,7 +259,7 @@ async def container_management(project_name: str, action:str):
         
     elif action == "log":
         try:
-            logs =  dockr.docker_restart_container(project_name)
+            logs = dockr.get_container_logs(project_name)
             if logs:
                 return {"message": f"Containers logs: {logs}."}
             else:
