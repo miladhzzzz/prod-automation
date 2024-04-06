@@ -39,7 +39,7 @@ class ConfigPayload(BaseModel):
     config: str
 # Logic / Global / Background functions
     
-def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTasks, webhook = False, revert: bool = False, commit_hash:str = ""):
+def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTasks, webhook = False, revert = False, commit_hash = ""):
     project_name = repo
     log_file = f"{project_name}.log"
     repo_url = f"https://github.com/{owner}/{repo}.git"
@@ -143,7 +143,7 @@ async def github_webhook(request: Request, background_tasks: BackgroundTasks):
         repo = payload["repository"]["name"]
         commit_hash = payload["commits"][-1]["id"]
         
-        return deploy_project_logic(owner, repo, background_tasks, commit_hash, webhook=True)
+        return deploy_project_logic(owner, repo, background_tasks, webhook=True, revert=False, commit_hash=commit_hash)
     
     return {"message": f"Ignored event: {event}"}
 
