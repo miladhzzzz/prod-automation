@@ -30,6 +30,7 @@ jobs:
         pip install httpx
         pip install cryptography
         pip install -r app/requirements.txt
+        echo "B8owwUjoNbchGBfTiQe50KabHhs63TA-Gv_wpUTEtnM=" > app/key.key    
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
