@@ -39,7 +39,7 @@ class ConfigPayload(BaseModel):
     config: str
 # Logic / Global / Background functions
     
-def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTasks):
+def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTasks, webhook: bool = False, commit_hash:str = ""):
     project_name = repo
     log_file = f"{project_name}.log"
     repo_url = f"https://github.com/{owner}/{repo}.git"
@@ -59,6 +59,11 @@ def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTask
         # Create the log directory if it doesn't exist
         os.makedirs(log_dir, exist_ok=True)
 
+        # Get the Current Commit information
+        if commit_hash == "":
+            result = subprocess.run(["git", "rev-parse", "HEAD"], cwd=project_dir, stdout=subprocess.PIPE, text=True)
+            commit_hash = result.stdout.strip()
+
         # Check if Docker Compose file exists
         compose_file_path = os.path.join(project_dir, "docker-compose.yml")
         if compose_file_path and os.path.exists(compose_file_path):
@@ -68,7 +73,7 @@ def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTask
                 background_tasks.add_task(helpers.set_project_env, project_envs)
 
             # Use docker-compose to deploy the project
-            background_tasks.add_task(dockr.deploy_docker_compose, project_name, compose_file_path, log_file_path)
+            background_tasks.add_task(dockr.deploy_docker_compose, project_name, compose_file_path, log_file_path, webhook, commit_hash)
         else:
             # Read exposed ports from Dockerfile
             dockerfile_path = os.path.join(project_dir, "Dockerfile")
@@ -81,14 +86,14 @@ def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTask
                 envs_str = ""
 
             # Execute deployment using Dockerfile
-            background_tasks.add_task(dockr.deploy_docker_run, project_name, project_dir, log_file_path, exposed_ports, envs_str)
+            background_tasks.add_task(dockr.deploy_docker_run, project_name, project_dir, log_file_path, exposed_ports, envs_str, webhook , commit_hash)
         
         # Provide immediate response to the user
         return {"message": f"Deployment started for {project_name}. Check status at /status/{project_name}"}
     
     except subprocess.CalledProcessError as e:
         print(f"Error deploying {project_name}: {e}")
-        log.log_build_request(project_name, "failure")
+        log.log_build_request(project_name, "failure", webhook, commit_hash)
         return {"message": f"Failed to deploy {project_name}"}
 
 # HTTP REST API ENDPOINTS
@@ -113,43 +118,7 @@ async def get_projects() -> List[str]:
 
 @app.get("/jobs")
 async def get_jobs() -> List[Dict[str, str]]:
-    try:
-        with connection_pool.get_connection() as conn:
-            cur = conn.cursor()
-            # Return the details of all jobs including project details
-            cur.execute('''SELECT j.id, j.status, j.log_file, p.name as project_name, p.success_count, p.failure_count 
-                        FROM jobs j
-                        JOIN projects p ON j.project_id = p.id''')
-            jobs = []
-            for row in cur.fetchall():
-                # Get container data associated with the project name
-                container_data = dockr.get_project_containers(row[3])
-
-                job = {
-                    "id": row[0],
-                    "status": row[1],
-                    "log_file": row[2],
-                    "project_name": row[3],
-                    "success_count": str(row[4]),  # Convert to string
-                    "failure_count": str(row[5])   # Convert to string
-                }
-
-                if row[1] == "success" and container_data:
-                    job["containers"] = json.dumps(container_data)
-                
-                if row[1] == "failed" and container_data:
-                    for container in container_data:
-                        if container.get("status") == "exited":
-                            container_logs = dockr.get_container_logs(row[3])
-                            job["container_name"] = container.get("name")
-                            job["container_status"] = container.get("status")
-                            job["container_logs"] = container_logs
-
-                jobs.append(job)
-            return jobs
-        
-    except sqlite3.Error as e:
-        print(f"Error logging build request: {e}")
+    return log.get_jobs()
 
 @app.post("/webhook")
 async def github_webhook(request: Request, background_tasks: BackgroundTasks):
@@ -170,8 +139,9 @@ async def github_webhook(request: Request, background_tasks: BackgroundTasks):
 
         owner = payload["repository"]["owner"]["login"]
         repo = payload["repository"]["name"]
+        commit_hash = payload["commits"][-1]["id"]
         
-        return deploy_project_logic(owner, repo, background_tasks)
+        return deploy_project_logic(owner, repo, background_tasks, commit_hash, webhook=True)
     
     return {"message": f"Ignored event: {event}"}
 
