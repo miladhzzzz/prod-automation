@@ -223,10 +223,10 @@ async def revert_changes(
     # Logic to determine which type of revert to perform
     if revert_type == "soft":
         # Perform soft revert
-        subprocess.run(["git", "revert", "--soft", "HEAD~1"], cwd=f"projects/{owner}/{repo}", check=True)
+        subprocess.run(["git", "revert", "--soft", "HEAD~1"], cwd=f"projects/{repo}", check=True)
     else:
         # Perform hard revert
-        subprocess.run(["git", "revert", "--hard", "HEAD~1"], cwd=f"projects/{owner}/{repo}", check=True)
+        subprocess.run(["git", "revert", "--hard", "HEAD~1"], cwd=f"projects/{repo}", check=True)
 
     # Call deploy_project_logic to rebuild the project
     background_tasks.add_task(
