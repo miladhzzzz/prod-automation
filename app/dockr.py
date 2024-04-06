@@ -93,7 +93,7 @@ def docker_push_images(registry_url: str = "registry:5000", project_name: str = 
     except subprocess.CalledProcessError as e:
         print(f"Error pushing images to {registry_url}: {e}")
 
-def deploy_docker_compose(project_name: str, compose_file_path: str, log_file_path: str):
+def deploy_docker_compose(project_name: str, compose_file_path: str, log_file_path: str, webhook: bool , commit_hash: str):
     try:
         # Check if there are existing containers for the project
         existing_containers = subprocess.run(["docker-compose", "-f", compose_file_path, "ps", "-q"], capture_output=True, text=True)
@@ -109,14 +109,14 @@ def deploy_docker_compose(project_name: str, compose_file_path: str, log_file_pa
         # push build images to registry
         # docker_push_images(project_name=project_name)
 
-        logs.log_build_request(project_name, "success")
+        logs.log_build_request(project_name, "success", webhook, commit_hash)
         logs.update_project_counts(project_name, True)
     except subprocess.CalledProcessError as e:
         print(f"Error deploying {project_name} with Docker Compose: {e}")
-        logs.log_build_request(project_name, "failure")
+        logs.log_build_request(project_name, "failure", webhook, commit_hash)
         logs.update_project_counts(project_name, False)
 
-def deploy_docker_run(project_name: str, project_dir: str, log_file_path: str, exposed_ports: List[int], envs:str = None):
+def deploy_docker_run(project_name: str, project_dir: str, log_file_path: str, exposed_ports: List[int], webhook: bool, commit_hash: str, envs:str = None):
     try:
         stop_and_remove_container(project_name)
         with open(log_file_path, "a") as log:
@@ -142,13 +142,14 @@ def deploy_docker_run(project_name: str, project_dir: str, log_file_path: str, e
         # push build images to registry
         # docker_push_images(project_name=project_name)
         
-        logs.log_build_request(project_name, "success")
+        logs.log_build_request(project_name, "success", webhook, commit_hash)
         logs.update_project_counts(project_name, True)  
     except subprocess.CalledProcessError as e:
         print(f"Error deploying {project_name}: {e}")
-        logs.log_build_request(project_name, "failure")
+        logs.log_build_request(project_name, "failure", webhook, commit_hash)
         logs.update_project_counts(project_name, False)
 
+# TODO: return a Dict[container_name , container_logs]
 def get_container_logs(container_name: str):
     # Attempt to get logs for the exact container name
     container_logs = subprocess.run(["docker", "logs", container_name], capture_output=True, text=True)
