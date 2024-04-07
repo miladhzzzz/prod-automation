@@ -30,7 +30,7 @@ get_container_ip() {
         echo "Failed to get container IP address"
         exit 1
     }
-    echo "Container IP address: $container_ip"
+    echo "Registry Container IP address: $container_ip"
 }
 
 # Function to update /etc/hosts with container IP address
