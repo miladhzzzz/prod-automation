@@ -118,7 +118,7 @@ def deploy_docker_compose(project_name: str, compose_file_path: str, log_file_pa
         logs.log_build_request(project_name, "failure", webhook, commit_hash)
         logs.update_project_counts(project_name, False)
 
-def deploy_docker_run(project_name: str, project_dir: str, log_file_path: str, exposed_ports: List[int], webhook: bool, commit_hash: str, envs:str = None):
+def deploy_docker_run(project_name: str, project_dir: str, log_file_path: str, exposed_ports: List[int], webhook: bool, commit_hash: str, envs = None):
     try:
         stop_and_remove_container(project_name)
         with open(log_file_path, "a") as log:
