@@ -73,8 +73,8 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
 
     ```shell
     cd scripts
-    chmod +x /extract-kubeconfig.sh
-    ./extract-kubeconfig.sh
+    chmod +x extract-kubeconfig.sh
+    ./extract-kubeconfig.sh -c <CONTEXT_YOU_WANT_EXTRACTED> -a <https://'prod-auto-public-ip/dns'>
     ```
 
 6. **Utilize Docker Compose:** Use a `docker-compose.yml` in the root of your repository or a Dockerfile to build your project and define services.
