@@ -13,9 +13,6 @@ while getopts ":c:a:k:" opt; do
     a)
       api_server_url="$OPTARG"
       ;;
-    k)
-      kubeconfig_file="$OPTARG"
-      ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
       exit 1
@@ -40,7 +37,7 @@ kubectl config use-context $context
 kubectl config view --minify --flatten --context=$context > $kubeconfig_file
 
 # Upload kubeconfig to API server
-curl -X POST -H "Content-Type: multipart/form-data" -F "file=@$kubeconfig_file" $api_server_url/upload
+curl -X POST -H "Content-Type: multipart/form-data" -F "file=@$kubeconfig_file" $api_server_url/kubeconfig
 
 rm $kubeconfig_file
 
