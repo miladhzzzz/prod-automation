@@ -88,7 +88,7 @@ def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTask
                 envs_str = ""
 
             # Execute deployment using Dockerfile
-            background_tasks.add_task(dockr.deploy_docker_run, project_name, project_dir, log_file_path, exposed_ports, envs_str, webhook , commit_hash)
+            background_tasks.add_task(dockr.deploy_docker_run, project_name, project_dir, log_file_path, exposed_ports, webhook , commit_hash, envs=envs_str)
         
         # Provide immediate response to the user
         return {"message": f"Deployment started for {project_name}. Check status at /status/{project_name}"}
