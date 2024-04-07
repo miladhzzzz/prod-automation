@@ -1,5 +1,5 @@
 import os , json, subprocess ,logging , uvicorn, sqlite3, sentry_sdk, requests
-from fastapi import FastAPI, BackgroundTasks, HTTPException, Request
+from fastapi import FastAPI, BackgroundTasks, HTTPException, Request, UploadFile, File, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List, Dict
 from db import ConnectionPool
@@ -152,20 +152,21 @@ async def deploy_project(owner: str, repo: str, background_tasks: BackgroundTask
     return deploy_project_logic(owner, repo, background_tasks)
 
 @app.post("/kubeconfig")
-async def kubectl_config(config_payload: ConfigPayload):
+async def kubectl_config(file: UploadFile = File(...)):
     try:
+        # Validate kubeconfig
+        kubeconfig_content = await file.read()
+        if not helpers.is_valid_kubeconfig(kubeconfig_content.decode()):
+            raise HTTPException(status_code=422, detail="Invalid kubeconfig content provided.")
+
         # Check if continuous integration is reachable
         if requests.get("http://kube-o-matic:8555/").status_code != 200:
             raise HTTPException(status_code=503, detail="Continuous integration is not reachable or running. Make sure you use 'make cd' in your root dir to set this up!")
 
         cd_url = "http://kube-o-matic:8555/"
 
-        # Validate kubeconfig
-        if not helpers.is_valid_kubeconfig(config_payload.config):
-            raise HTTPException(status_code=422, detail="Invalid kubeconfig content provided.")
-
         # Prepare file data
-        files = {"file": ("kubeconfig", config_payload.config.encode(), "application/octet-stream")}
+        files = {"file": (file.filename, kubeconfig_content, "application/octet-stream")}
 
         # Send kubeconfig as file
         r = requests.post(cd_url + "upload", files=files)
@@ -179,7 +180,7 @@ async def kubectl_config(config_payload: ConfigPayload):
         raise HTTPException(status_code=500, detail=f"Error occurred while communicating with the server: {str(e)}")
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")    
     
 @app.post("/vault/{project_name}")
 async def set_vault_secrets(project_name: str, request: Request):
