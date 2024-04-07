@@ -36,7 +36,14 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
 2. **Run Setup Script:** Execute the Makefile or init.sh script provided in the repository to automate the setup and initialization process.
 
     ```shell
-    # Setting up the host if its freshly installed skip this whole section if you have docker / docker-compose / git installed!!
+    cd prod-automation && chmod +x init.sh 
+    ./init.sh <YOUR_GITHUB_SECRET_HERE> # This will effectively do ALL THE BELOW STEPS! plus setting up the registy configuration and cronjobs!
+    ```
+
+    Or just follow along this guide to set everything up manually!(also have a better picture of what needs to be done incase anything goes wrong!)
+
+    ```shell
+    # Setting up host if its freshly installed skip this if you have docker / docker-compose / git installed!!
     make setup
     ```
 
@@ -48,22 +55,29 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
     ./setup-host.sh
     ```
 
-3. **Deploy System Components:** Deploy the entire system, including Traefik reverse proxy, Grafana, Prometheus for observability, and the production automation container.
+3. **Setup Host Docker Registry:** Setup the host docker engine and /etc/hosts file to point the registry service.
+
+    ```shell
+    cd scripts && chmod +x hosts-registry.sh
+    ./hosts-registry.sh insecure_registry # this will make the /etc/docker/daemon.json file and restart docker.
+    ````
+
+4. **Deploy System Components:** Deploy the entire system, including Traefik reverse proxy, Grafana, Prometheus for observability, and the production automation container.
 
     ```shell
     make keygen # make keygen will generate a AES 256 CBC key for keeping your secrects safe in vault!
     make up # make up will bring the project up using docker-compose
+    ./scripts/hosts-registry.sh update_hosts # this will update /etc/hosts file with the registry container ip for DNS resolution.
     ```
 
-4. **Set Github Webhook Secret:** set the github secret with the script just like below:
+5. **Set Github Webhook Secret:** set the github secret inside the prod-auto container with the script just like below:
 
     ```shell
-    cd scripts
-    chmod +x set-env.sh
+    cd scripts && chmod +x set-env.sh
     ./set-env.sh GITHUB_WEBHOOK_SECRET <YOUR_SECRET_HERE>
     ```
 
-5. **Kubernetes Integration:** Integrate [kube-o-matic](https://github.com/miladhzzzz/kube-o-matic) in your deployment environment to automate CD for kubernetes!
+6. **Kubernetes Integration:** Integrate [kube-o-matic](https://github.com/miladhzzzz/kube-o-matic) in your deployment environment to automate CD for kubernetes!
 
     ```shell
     make cd 
@@ -72,12 +86,11 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
     Extract and inject your kubeconfig file to kube-o-matic:
 
     ```shell
-    cd scripts
-    chmod +x extract-kubeconfig.sh
+    cd scripts && chmod +x extract-kubeconfig.sh
     ./extract-kubeconfig.sh -c <CONTEXT_YOU_WANT_EXTRACTED> -a <https://'prod-auto-public-ip/dns'>
     ```
 
-6. **Utilize Docker Compose:** Use a `docker-compose.yml` in the root of your repository or a Dockerfile to build your project and define services.
+7. **Utilize Docker Compose:** Use a `docker-compose.yml` in the root of your repository or a Dockerfile to build your project and define services.
 
     * Make sure you have either a docker-compose.yml as shown below or a Dockerfile present in the ROOT_DIR of your project!
 
@@ -112,7 +125,7 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
 
     ```
 
-7. **Set Environment Variables:** Use the API endpoint **'/vault/{project_name}'** to set environment variables for projects, ensuring smooth application execution without manual intervention.
+8. **Set Environment Variables:** Use the API endpoint **'/vault/{project_name}'** to set environment variables for projects, ensuring smooth application execution without manual intervention.
 
     * Send this as a json payload to the endpoint above to set your vault secrets.
 
@@ -123,13 +136,13 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
     }
     ```
 
-8. **Automate Build Triggers:** Trigger builds automatically when a webhook event is received, with the necessary environment variables pre-configured for seamless deployment.
+9. **Automate Build Triggers:** Trigger builds automatically when a webhook event is received, with the necessary environment variables pre-configured for seamless deployment.
 
    * Go to your github repository > settings > webhook and point the webhook to **'http(s)://<YOUR-DNS/PUBLIC-IP>/webhook'**.
    * Set your webhook secret.
    * Use application/json as the content type.
 
-9. **Track Pipeline Status:** Keep track of the pipeline status in **'/status/{project_name}'** and **'/jobs'** for monitoring and reporting purposes.
+10. **Track Pipeline Status:** Keep track of the pipeline status in **'/status/{project_name}'** and **'/jobs'** for monitoring and reporting purposes.
   
 ## Experience the Magic
 
