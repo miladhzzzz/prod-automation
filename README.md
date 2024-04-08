@@ -36,9 +36,12 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
 2. **Run Setup Script:** Execute the Makefile or init.sh script provided in the repository to automate the setup and initialization process.
 
     ```shell
-    cd prod-automation && chmod +x init.sh 
-    ./init.sh <YOUR_GITHUB_SECRET_HERE> # This will effectively do ALL THE BELOW STEPS! plus setting up the registy configuration and cronjobs!
+    cd prod-automation && chmod +x init.sh
+    # This will effectively do ALL THE BELOW STEPS! plus setting up the registy configuration and cronjobs! 
+    ./init.sh <YOUR_GITHUB_SECRET_HERE>
     ```
+
+    **SKIP to step 6 if you use init.sh**
 
     Or just follow along this guide to set everything up manually!(also have a better picture of what needs to be done incase anything goes wrong!)
 
