@@ -41,7 +41,7 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
     ./init.sh <YOUR_GITHUB_SECRET_HERE>
     ```
 
-    **SKIP to step 6 if you use init.sh**
+    **!!SKIP to step 6 if you use init.sh!!**
 
     Or just follow along this guide to set everything up manually!(also have a better picture of what needs to be done incase anything goes wrong!)
 
