@@ -160,6 +160,16 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
 * **Reverse Proxy:** we also use Traefik reverse proxy you can set labels in your docker-compose to expose the services dynamically!.
 
 * **Observability** we use Prometheus / Grafana to monitor the traefik entry point we also have a /prometheus config dir you can change it to observe all your containers or other components easily!
+
+* ## TODO
+
+  * [ ] Tenanat Certificate manager(Using BYOS, LetsEncrypt)
+  * [ ] Client
+  * [ ] Test and custom pipeline implementation
+  * [ ] System state awareness
+  * [ ] Consitent Data management and restructuring(for Db, projects, logs directory)
+  * [ ] Re-implementing the pipeline controller for scalablity(Celery)
+  * [ ] Notification system
   
 ## Join the Journey
 
