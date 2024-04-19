@@ -7,7 +7,7 @@ from threading import Lock
 # Connection pool
 class ConnectionPool:
 
-    DB_FILE = "builds.db"
+    DB_FILE = "database/builds.db"
 
     def __init__(self, max_connections: int = 10):
         self.max_connections = max_connections
