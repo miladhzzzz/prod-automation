@@ -32,7 +32,7 @@ while true; do
     repo_name=$(echo "$body" | jq -r '.repository.name')
 
     # Example: Extract commit hash from the body
-    commit_hash=$(echo "$body" | jq -r '.commit.hash')
+    commit_hash=$(echo "$body" | jq -r '.commits.id')
 
     # Log trigger details
     echo "Trigger: Webhook"
@@ -41,11 +41,11 @@ while true; do
 
     # Example: Trigger appropriate CI/CD scripts based on event type
     case $github_event in
-        "push")
+        push)
             echo "Event Type: Push"
             ../init.sh $WEBHOOK_SECRET
             ;;
-        "pull_request")
+        pull_request)
             echo "Event Type: Pull Request"
             ./build.sh
             ./test.sh
