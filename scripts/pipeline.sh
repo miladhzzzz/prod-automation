@@ -26,7 +26,7 @@ while true; do
     # Log received headers, body, and GitHub event
     echo "Received headers: $headers"
     echo "Received body: $body"
-    echo "GitHub Event: $github_event"
+    echo "GitHub Event: '$github_event'"
 
     # Example: Extract repository name from the body
     repo_name=$(echo "$body" | jq -r '.repository.name')
@@ -40,19 +40,19 @@ while true; do
     echo "Commit Hash: $commit_hash"
 
     # Example: Trigger appropriate CI/CD scripts based on event type
-    case $github_event in
-        push)
+    case "$github_event" in  
+        "push")
             echo "Event Type: Push"
-            ../init.sh $WEBHOOK_SECRET
+            ../init.sh "$WEBHOOK_SECRET"
             ;;
-        pull_request)
+        "pull_request")
             echo "Event Type: Pull Request"
             ./build.sh
             ./test.sh
             ;;
         # Add more cases for other event types as needed
         *)
-            echo "Unsupported event type: $github_event"
+            echo "Unsupported event type: '$github_event'"
             ;;
     esac
 done
