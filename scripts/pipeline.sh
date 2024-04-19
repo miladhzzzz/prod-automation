@@ -32,7 +32,7 @@ while true; do
     repo_name=$(echo "$body" | jq -r '.repository.name')
 
     # Example: Extract commit hash from the body
-    commit_hash=$(echo "$body" | jq -r '.commits.id')
+    commit_hash=$(echo "$body" | jq -r '.after')
 
     # Log trigger details
     echo "Trigger: Webhook"
