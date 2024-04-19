@@ -68,6 +68,9 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "./key.key:/app/key.key"
+      - "./database:/app/database"
+      - "./projects:/app/projects"
+      - "./build_logs:/app/build_logs"
     privileged: true
     networks:
       - prod-auto-inet
