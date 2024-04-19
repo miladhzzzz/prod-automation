@@ -20,6 +20,7 @@ fi
 chmod +x ./scripts/setup-host.sh
 chmod +x ./scripts/env-set.sh
 chmod +x ./scripts/hosts-registry.sh
+chmod +x ./scripts/pipeline.sh
 
 # Check if Docker, Docker Compose, and Git are installed
 if ! command_exists docker || ! command_exists docker-compose || ! command_exists git; then
@@ -73,4 +74,17 @@ fi
 if ! crontab -l | grep -q "docker image prune"; then
     # Setup cronjob for Docker image prune
     (crontab -l ; echo "0 0 * * * docker image prune -a -f") | crontab -
+fi
+
+# Run the shell pipeline if the second argument is set "auto"
+
+if [ -z "$2" ]; then
+    # Check if pipeline.sh is already running with nohup
+    if pgrep -f "pipeline.sh" > /dev/null; then
+        # If it's running, kill the existing process
+        echo "Existing pipeline.sh process found ..."
+        exit 1
+    fi
+
+    nohup ./scripts/pipeline.sh $1 > pipeline.log &
 fi
