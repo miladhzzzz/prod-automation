@@ -178,3 +178,4 @@ Ready to embark on a journey of automation and efficiency? Dive into the Automag
 ## License
 
 This project is licensed under the MIT License.
+
