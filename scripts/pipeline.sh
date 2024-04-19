@@ -5,6 +5,9 @@ set -euo pipefail
 # Webhook secret
 WEBHOOK_SECRET=$1
 
+# Get the directory of the current script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 # Define the port to listen on
 PORT=8888
 
@@ -42,8 +45,8 @@ while true; do
     # Example: Trigger appropriate CI/CD scripts based on event type
     case "$github_event" in  
         "push")
-            echo "Event Type: Push"
-            ../init.sh "$WEBHOOK_SECRET"
+            echo "Trigerring pipeline..."
+            "$SCRIPT_DIR/../init.sh" "$WEBHOOK_SECRET"
             ;;
         "pull_request")
             echo "Event Type: Pull Request"
