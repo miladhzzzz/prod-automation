@@ -21,12 +21,12 @@ while true; do
     body=$(echo "$request" | awk 'BEGIN {RS="\r\n\r\n"} {getline; print}')
 
     # Extract X-GitHub-Event from headers
-    github_event=$(echo "$headers" | grep -i '^X-GitHub-Event:' | awk '{print $2}')
+    github_event=$(echo "$headers" | grep -i '^X-GitHub-Event:' | awk '{print $2}' | tr -d '[:space:]')
 
     # Log received headers, body, and GitHub event
     echo "Received headers: $headers"
     echo "Received body: $body"
-    echo "GitHub Event: '$github_event'"
+    echo "GitHub Event: $github_event"
 
     # Example: Extract repository name from the body
     repo_name=$(echo "$body" | jq -r '.repository.name')
@@ -52,7 +52,7 @@ while true; do
             ;;
         # Add more cases for other event types as needed
         *)
-            echo "Unsupported event type: '$github_event'"
+            echo "Unsupported event type: $github_event"
             ;;
     esac
 done
