@@ -78,12 +78,12 @@ fi
 
 # Run the shell pipeline if the second argument is set "auto"
 
-if [ -z "$2" ]; then
+if [ ! -z "$2" ]; then
     # Check if pipeline.sh is already running with nohup
     if pgrep -f "pipeline.sh" > /dev/null; then
         # If it's running, kill the existing process
         echo "Existing pipeline.sh process found ..."
-        exit 1
+        return
     fi
 
     nohup ./scripts/pipeline.sh $1 > pipeline.log &
