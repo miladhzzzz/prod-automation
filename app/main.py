@@ -35,8 +35,6 @@ class EnvironmentVariables(BaseModel):
     key: str
     value: str
 
-class ConfigPayload(BaseModel):
-    config: str
 # Logic / Global / Background functions
     
 def deploy_project_logic(owner: str, repo: str, background_tasks: BackgroundTasks, webhook = False, revert = False, commit_hash = ""):
