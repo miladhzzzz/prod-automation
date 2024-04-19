@@ -1,6 +1,4 @@
-builds.db
 app/projects/**
-build_logs
 __pycache__
 dev/**
 .vscode
