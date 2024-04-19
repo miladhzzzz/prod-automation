@@ -167,7 +167,7 @@ The Automagic DevOps Pipeline is your ultimate DevOps companion, designed to sim
   * [ ] Client
   * [ ] Test and custom pipeline implementation
   * [ ] System state awareness
-  * [ ] Consitent Data management and restructuring(for Db, projects, logs directory)
+  * [x] Consitent Data management and restructuring(for Db, projects, logs directory)
   * [ ] Re-implementing the pipeline controller for scalablity(Celery)
   * [ ] Notification system
   
